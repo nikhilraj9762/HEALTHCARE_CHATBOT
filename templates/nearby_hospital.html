@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nearby Hospital</title>
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f8fc;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .primary { background: #2563eb; color: white; }
+        .secondary { background: #d1d5db; }
+
+        #map {
+            height: 420px;
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 18px;
+        }
+
+        .status {
+            margin-bottom: 14px;
+            font-weight: bold;
+        }
+
+        .card {
+            background: white;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card h3 {
+            margin-top: 0;
+        }
+
+        .map-link {
+            display: inline-block;
+            margin-top: 8px;
+            text-decoration: none;
+            color: #2563eb;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="btn secondary" onclick="window.location.href='/'">Back</button>
+        <h1>Nearby Hospital</h1>
+        <button class="btn primary" onclick="findNearbyHospitals()">Use My Location</button>
+    </div>
+
+    <div id="status" class="status">Click "Use My Location" to find nearby hospitals.</div>
+    <div id="map"></div>
+    <div id="results"></div>
+
+    <script>
+        let map = L.map('map').setView([20.5937, 78.9629], 5);
+        let markers = [];
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        function clearMarkers() {
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+        }
+
+        async function findNearbyHospitals() {
+            const status = document.getElementById("status");
+            const results = document.getElementById("results");
+
+            results.innerHTML = "";
+            clearMarkers();
+            status.innerText = "Requesting location access...";
+
+            if (!navigator.geolocation) {
+                status.innerText = "Geolocation is not supported in this browser.";
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(async function(position) {
+                const lat = position.coords.latitude;
+                const lon = position.coords.longitude;
+
+                map.setView([lat, lon], 14);
+
+                const userMarker = L.marker([lat, lon]).addTo(map)
+                    .bindPopup("You are here")
+                    .openPopup();
+                markers.push(userMarker);
+
+                status.innerText = "Searching nearby hospitals...";
+
+                try {
+                    const response = await fetch("/api/nearby_hospital", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ lat, lon })
+                    });
+
+                    const data = await response.json();
+
+                    if (!data.length) {
+                        status.innerText = "No nearby hospitals found.";
+                        return;
+                    }
+
+                    status.innerText = "Nearby hospitals found:";
+
+                    data.forEach(item => {
+                        const marker = L.marker([item.lat, item.lon]).addTo(map)
+                            .bindPopup(`<b>${item.name}</b><br>${item.location}<br>${item.distance_km} km away`);
+                        markers.push(marker);
+
+                        const card = document.createElement("div");
+                        card.className = "card";
+                        card.innerHTML = `
+                            <h3>${item.name}</h3>
+                            <p><strong>Location:</strong> ${item.location}</p>
+                            <p><strong>Distance:</strong> ${item.distance_km} km</p>
+                            <p><strong>Timings:</strong> ${item.timings}</p>
+                            <p><strong>Rating:</strong> ${item.rating}</p>
+                            <p><strong>Phone:</strong> ${item.phone}</p>
+                            <p><strong>Services:</strong> ${item.services.join(", ")}</p>
+                            <a class="map-link" target="_blank" href="https://www.google.com/maps?q=${item.lat},${item.lon}">Open in Maps</a>
+                        `;
+                        results.appendChild(card);
+                    });
+                } catch (error) {
+                    status.innerText = "Error while searching nearby hospitals.";
+                }
+            }, function(error) {
+                status.innerText = "Location permission denied or unavailable.";
+            });
+        }
+    </script>
+
+</body>
+</html>

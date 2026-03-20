@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="chatbot-page-wrapper">
+        <div class="chatbot-page-container">
+
+            <div class="chatbot-topbar">
+                <a href="/" class="back-btn">← Back</a>
+                <h2>AI Healthcare Chatbot</h2>
+            </div>
+
+            <div class="voice-controls top-voice-only">
+                <div class="voice-toggle-box">
+                    <span class="voice-label">Voice Output</span>
+                    <label class="switch">
+                        <input type="checkbox" id="voiceToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="chat-box" id="chatMessages">
+                <div class="message bot-message">
+                    Hello! I am your AI healthcare assistant.
+                    You can type or speak your request.
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <input type="text" id="userInput" placeholder="Type your message here...">
+
+                <button id="micBtn" class="mic-btn" title="Speak" aria-label="Speak">
+                    <svg viewBox="0 0 24 24" class="mic-icon" aria-hidden="true">
+                        <path d="M12 15a3 3 0 0 0 3-3V7a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3zm5-3a1 1 0 1 1 2 0 7 7 0 0 1-6 6.93V21h3a1 1 0 1 1 0 2H8a1 1 0 1 1 0-2h3v-2.07A7 7 0 0 1 5 12a1 1 0 1 1 2 0 5 5 0 0 0 10 0z"/>
+                    </svg>
+                </button>
+
+                <button id="sendBtn">Send</button>
+            </div>
+
+            <div class="chat-note">
+                Try: I have fever and body pain / Set reminder / Dentist near me
+            </div>
+
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

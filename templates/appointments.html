@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f8fc;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .add-btn {
+            background: #2563eb;
+            color: white;
+        }
+
+        .back-btn {
+            background: #d1d5db;
+        }
+
+        .card {
+            background: white;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .card p {
+            margin: 6px 0;
+        }
+
+        .actions {
+            margin-top: 10px;
+        }
+
+        .edit-btn {
+            background: #facc15;
+            margin-right: 8px;
+        }
+
+        .delete-btn {
+            background: #ef4444;
+            color: white;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 350px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+
+        .save-btn {
+            background: #22c55e;
+            color: white;
+        }
+
+        .cancel-btn {
+            background: #d1d5db;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar">
+        <button class="back-btn" onclick="window.location.href='/'">Back</button>
+        <h1>Appointments</h1>
+        <button class="add-btn" onclick="openModal()">Add Appointment</button>
+    </div>
+
+    <div id="appointmentsList"></div>
+
+    <div class="modal" id="appointmentModal">
+        <div class="modal-content">
+            <h2 id="formTitle">Add Appointment</h2>
+
+            <input type="hidden" id="appointmentId">
+            <input type="text" id="doctor" placeholder="Doctor Name">
+            <input type="text" id="hospital" placeholder="Hospital Name">
+            <input type="date" id="date">
+            <input type="time" id="time">
+            <input type="text" id="location" placeholder="Location">
+            <input type="text" id="purpose" placeholder="Purpose">
+
+            <button class="save-btn" onclick="saveAppointment()">Save</button>
+            <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        let editing = false;
+
+        async function loadAppointments() {
+            const response = await fetch('/get_appointments');
+            const data = await response.json();
+
+            const list = document.getElementById('appointmentsList');
+            list.innerHTML = '';
+
+            if (data.length === 0) {
+                list.innerHTML = '<p>No appointments added yet.</p>';
+                return;
+            }
+
+            data.forEach(appt => {
+                const card = document.createElement('div');
+                card.className = 'card';
+
+                card.innerHTML = `
+                    <p><strong>Doctor:</strong> ${appt.doctor}</p>
+                    <p><strong>Hospital:</strong> ${appt.hospital}</p>
+                    <p><strong>Date:</strong> ${appt.date}</p>
+                    <p><strong>Time:</strong> ${appt.time}</p>
+                    <p><strong>Location:</strong> ${appt.location}</p>
+                    <p><strong>Purpose:</strong> ${appt.purpose}</p>
+                    <div class="actions">
+                        <button class="edit-btn" onclick='editAppointment(${JSON.stringify(appt)})'>Edit</button>
+                        <button class="delete-btn" onclick='deleteAppointment(${appt.id})'>Delete</button>
+                    </div>
+                `;
+
+                list.appendChild(card);
+            });
+        }
+
+        function openModal() {
+            editing = false;
+            document.getElementById('formTitle').innerText = 'Add Appointment';
+            document.getElementById('appointmentId').value = '';
+            document.getElementById('doctor').value = '';
+            document.getElementById('hospital').value = '';
+            document.getElementById('date').value = '';
+            document.getElementById('time').value = '';
+            document.getElementById('location').value = '';
+            document.getElementById('purpose').value = '';
+            document.getElementById('appointmentModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('appointmentModal').style.display = 'none';
+        }
+
+        function editAppointment(appt) {
+            editing = true;
+            document.getElementById('formTitle').innerText = 'Edit Appointment';
+            document.getElementById('appointmentId').value = appt.id;
+            document.getElementById('doctor').value = appt.doctor;
+            document.getElementById('hospital').value = appt.hospital;
+            document.getElementById('date').value = appt.date;
+            document.getElementById('time').value = appt.time;
+            document.getElementById('location').value = appt.location;
+            document.getElementById('purpose').value = appt.purpose;
+            document.getElementById('appointmentModal').style.display = 'flex';
+        }
+
+        async function saveAppointment() {
+            const appointmentData = {
+                id: document.getElementById('appointmentId').value,
+                doctor: document.getElementById('doctor').value,
+                hospital: document.getElementById('hospital').value,
+                date: document.getElementById('date').value,
+                time: document.getElementById('time').value,
+                location: document.getElementById('location').value,
+                purpose: document.getElementById('purpose').value
+            };
+
+            if (!appointmentData.doctor || !appointmentData.hospital || !appointmentData.date || !appointmentData.time) {
+                alert('Please fill doctor, hospital, date and time');
+                return;
+            }
+
+            if (editing) {
+                await fetch('/update_appointment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appointmentData)
+                });
+            } else {
+                await fetch('/add_appointment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(appointmentData)
+                });
+            }
+
+            closeModal();
+            loadAppointments();
+        }
+
+        async function deleteAppointment(id) {
+            await fetch(`/delete_appointment/${id}`, {
+                method: 'DELETE'
+            });
+            loadAppointments();
+        }
+
+        loadAppointments();
+    </script>
+
+</body>
+</html>

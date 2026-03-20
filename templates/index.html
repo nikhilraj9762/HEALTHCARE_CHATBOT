@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Healthcare Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <div class="page-wrapper">
+        <div class="dashboard-container">
+            
+            <div class="header">
+                <div class="logo-heart">❤</div>
+                <h1>Healthcare</h1>
+                <p class="subtitle"> Health Assistant Dashboard</p>
+            </div>
+
+            <div class="card-grid">
+                
+                <a href="/chatbot" class="dashboard-card">
+                    <div class="card-icon">🤖</div>
+                    <div class="card-title">AI Chatbot</div>
+                </a>
+
+                <a href="/medicine-reminder" class="dashboard-card">
+                    <div class="card-icon">⏰</div>
+                    <div class="card-title">Medicine Reminder</div>
+                </a>
+
+                <a href="/appointments" class="dashboard-card">
+                    <div class="card-icon">📅</div>
+                    <div class="card-title">Appointments</div>
+                </a>
+
+                <a href="#" class="dashboard-card">
+                    <div class="card-icon">📋</div>
+                    <div class="card-title">Health Report</div>
+                </a>
+
+                <a href="#" class="dashboard-card">
+                    <div class="card-icon">💊</div>
+                    <div class="card-title">Medical Units</div>
+                </a>
+
+                <a href="/nearby-pharmacy" class="dashboard-card">
+                    <div class="card-icon">🏥</div>
+                    <div class="card-title">Nearby Pharmacy</div>
+                </a>
+
+                <a href="/nearby-hospital" class="dashboard-card">
+                    <div class="card-icon">🚑</div>
+                    <div class="card-title">Nearby Hospital</div>
+                </a>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
