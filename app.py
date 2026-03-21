@@ -261,6 +261,7 @@ def format_appointments_by_doctor(doctor_name):
         return f"I could not find any appointment with Dr. {doctor_name.title()}."
 
     lines = [f"Appointments found for Dr. {doctor_name.title()}:"]
+
     for i, appt in enumerate(appointments, start=1):
         lines.append(
             f"{i}. {appt['date']} at {appt['time']} at {appt['hospital']}. "
@@ -460,6 +461,36 @@ def normalize_time(raw_time):
 
     return None
 
+def normalize_date(raw_date):
+    text = raw_date.strip().lower()
+
+    text = text.replace("/", "-")
+    text = text.replace(".", "-")
+    text = text.replace(" dash ", "-")
+    text = text.replace(" slash ", "-")
+    text = text.replace(" minus ", "-")
+    text = " ".join(text.split())
+    text = text.replace(" - ", "-").replace(" -", "-").replace("- ", "-")
+
+    date_formats = [
+        "%Y-%m-%d",
+        "%Y %m %d",
+        "%d-%m-%Y",
+        "%d %m %Y",
+        "%d %B %Y",
+        "%d %b %Y",
+        "%B %d %Y",
+        "%b %d %Y"
+    ]
+
+    for fmt in date_formats:
+        try:
+            return datetime.strptime(text, fmt).strftime("%Y-%m-%d")
+        except ValueError:
+            continue
+
+    return None
+
 # -----------------------------
 # Reminder parsing
 # -----------------------------
@@ -580,13 +611,14 @@ def handle_reminder_conversation(message):
 
     if chat_state["mode"] == "awaiting_reminder_date":
         date_text = message.strip()
-        try:
-            datetime.strptime(date_text, "%Y-%m-%d")
-            chat_state["reminder_data"]["date"] = date_text
-            chat_state["mode"] = "awaiting_reminder_time"
-            return "What time should I set it for? For example: 8 PM or 08:30 AM."
-        except ValueError:
-            return "Please enter the date in YYYY-MM-DD format."
+        parsed_date = normalize_date(date_text)
+
+        if not parsed_date:
+            return "Please enter a valid date. Example: 2026-03-21."
+
+        chat_state["reminder_data"]["date"] = parsed_date
+        chat_state["mode"] = "awaiting_reminder_time"
+        return "What time should I set it for? For example: 8 PM or 08:30 AM."
 
     if chat_state["mode"] == "awaiting_reminder_time":
         clean_time = message.strip().replace(",", "").replace("?", "").replace("!", "")
@@ -856,36 +888,79 @@ def format_nearby_results(message, lat, lon):
 def chatbot_response(message, lat=None, lon=None):
     msg = message.lower().strip()
 
-    # cancel / reset
     if msg in ["cancel", "stop", "reset", "exit", "clear"]:
         chat_state["mode"] = None
         chat_state["reminder_data"] = {}
         return "Okay, I cancelled the current reminder process."
 
-    # greetings
     if msg in ["hi", "hello", "hey", "hii", "helo"]:
         chat_state["mode"] = None
         chat_state["reminder_data"] = {}
         return (
             "Hello! I am your AI healthcare assistant. I can help with symptoms, medicine reminders, "
-            "appointments, medicine information, nearby hospitals, nearby pharmacies, and doctor searches."
+            "appointments, nearby hospitals, nearby pharmacies, and doctor searches."
         )
 
-    # continue reminder conversation if already active
-    if chat_state["mode"] and chat_state["mode"].startswith("awaiting_reminder"):
-        return handle_reminder_conversation(message)
+    interrupt_commands = [
+        "show appointments",
+        "show my appointments",
+        "all appointments",
+        "my appointments",
+        "appointment today",
+        "appointments today",
+        "any appointment today",
+        "do i have any appointments today",
+        "appointment tomorrow",
+        "appointments tomorrow",
+        "do i have appointment tomorrow",
+        "next appointment",
+        "my next appointment",
+        "when is my next appointment",
+        "appointment with",
+        "appointments with",
+        "show all reminders",
+        "show reminders",
+        "show my reminders",
+        "show medicines",
+        "my reminders",
+        "medicine reminders",
+        "today dosage",
+        "today dosages",
+        "today reminder",
+        "today reminders",
+        "what are today's dosages",
+        "show today's reminders",
+        "show today reminders",
+        "show today dosage",
+        "next dosage",
+        "next medicine",
+        "what is the next dosage",
+        "next dosage for today",
+        "next reminder",
+        "set reminder",
+        "add reminder",
+        "create reminder",
+        "new reminder",
+        "set reminder for",
+        "remind me to take",
+        "near me",
+        "nearby",
+        "closest",
+        "nearest"
+    ]
 
-    # -----------------------------
-    # Nearby searches
-    # -----------------------------
+    if chat_state["mode"] and chat_state["mode"].startswith("awaiting_reminder"):
+        if any(command in msg for command in interrupt_commands):
+            chat_state["mode"] = None
+            chat_state["reminder_data"] = {}
+        else:
+            return handle_reminder_conversation(message)
+
     if is_nearby_search_query(message):
         if lat is None or lon is None:
             return "Please allow location access in the chatbot so I can search nearby places for you."
         return format_nearby_results(message, lat, lon)
 
-    # -----------------------------
-    # Reminder queries
-    # -----------------------------
     if (
         "today dosage" in msg
         or "today dosages" in msg
@@ -934,9 +1009,6 @@ def chatbot_response(message, lat=None, lon=None):
         chat_state["reminder_data"] = {}
         return "Sure. What is the medicine name?"
 
-    # -----------------------------
-    # Appointment queries
-    # -----------------------------
     if (
         "show appointments" in msg
         or "show my appointments" in msg
@@ -970,30 +1042,9 @@ def chatbot_response(message, lat=None, lon=None):
             return format_appointments_by_doctor(doctor_name)
         return "Please tell me the doctor's name."
 
-    # -----------------------------
-    # Symptom questions
-    # -----------------------------
     if is_symptom_query(message):
         return get_ai_symptom_response(message)
 
-    # -----------------------------
-    # Medicine info
-    # -----------------------------
-    if "what is" in msg or "tell me about" in msg or "uses of" in msg:
-        cleaned = (
-            msg.replace("what is", "")
-            .replace("tell me about", "")
-            .replace("uses of", "")
-            .replace("?", "")
-            .strip()
-        )
-        if cleaned:
-            return get_medicine_info(cleaned)
-        return "Please tell me the medicine name, for example: What is paracetamol?"
-
-    # -----------------------------
-    # Final Gemini fallback
-    # -----------------------------
     return get_general_ai_response(message)
 
 # -----------------------------
@@ -1062,16 +1113,10 @@ def add_appointment_route():
 
     return jsonify(appointment)
 
-# -----------------------------
-# Get all appointments
-# -----------------------------
 @app.route("/get_appointments", methods=["GET"])
 def get_appointments():
     return jsonify(get_all_appointments())
 
-# -----------------------------
-# Update appointment
-# -----------------------------
 @app.route("/update_appointment", methods=["POST"])
 def update_appointment():
     data = request.get_json()
@@ -1098,9 +1143,6 @@ def update_appointment():
 
     return jsonify({"status": "success"})
 
-# -----------------------------
-# Delete appointment
-# -----------------------------
 @app.route("/delete_appointment/<int:appointment_id>", methods=["DELETE"])
 def delete_appointment(appointment_id):
     conn = get_db_connection()

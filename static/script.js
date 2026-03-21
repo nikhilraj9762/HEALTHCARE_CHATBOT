@@ -10,6 +10,9 @@ let alreadyReminded = {};
 let currentLatitude = null;
 let currentLongitude = null;
 
+let recognition = null;
+let isListening = false;
+
 function addMessage(text, sender) {
     const messageDiv = document.createElement("div");
     messageDiv.classList.add("message");
@@ -112,6 +115,8 @@ if (userInput) {
 }
 
 if (micBtn) {
+    
+
     micBtn.addEventListener("click", function () {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -120,22 +125,61 @@ if (micBtn) {
             return;
         }
 
-        const recognition = new SpeechRecognition();
+        if (isListening) return;
+
+        recognition = new SpeechRecognition();
         recognition.lang = "en-US";
-        recognition.interimResults = false;
+        recognition.interimResults = true;
         recognition.maxAlternatives = 1;
+        recognition.continuous = true;
+
+        let finalTranscript = "";
+        isListening = true;
+
+        micBtn.disabled = true;
+        micBtn.innerHTML = "&#127908;";
 
         recognition.start();
 
         recognition.onresult = function (event) {
-            const transcript = event.results[0][0].transcript;
-            userInput.value = transcript;
-            sendMessage();
+            let interimTranscript = "";
+
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                const transcript = event.results[i][0].transcript;
+
+                if (event.results[i].isFinal) {
+                    finalTranscript += transcript + " ";
+                } else {
+                    interimTranscript += transcript;
+                }
+            }
+
+            userInput.value = (finalTranscript + interimTranscript).trim();
         };
 
         recognition.onerror = function () {
             alert("Voice recognition failed. Please try again.");
+            isListening = false;
+            micBtn.disabled = false;
+            micBtn.innerHTML = "&#127908;";
         };
+
+        recognition.onend = function () {
+            isListening = false;
+            micBtn.disabled = false;
+            micBtn.innerHTML = "&#127908;";
+
+            const spokenText = userInput.value.trim();
+            if (spokenText !== "") {
+                sendMessage();
+            }
+        };
+
+        setTimeout(() => {
+            if (recognition && isListening) {
+                recognition.stop();
+            }
+        }, 8000);
     });
 }
 

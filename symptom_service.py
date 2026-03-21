@@ -5,6 +5,7 @@ import google.generativeai as genai
 load_dotenv()
 
 api_key = os.getenv("GEMINI_API_KEY")
+print("Loaded Gemini key:", api_key)
 
 if api_key:
     genai.configure(api_key=api_key)
