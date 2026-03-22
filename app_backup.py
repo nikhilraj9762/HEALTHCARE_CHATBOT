@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash
+from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -8,13 +8,8 @@ import sqlite3
 from datetime import datetime, date, timedelta
 from symptom_service import is_symptom_query, get_ai_symptom_response, get_general_ai_response
 from math import radians, cos, sin, asin, sqrt
-from werkzeug.security import generate_password_hash, check_password_hash
-from functools import wraps
 
 app = Flask(__name__)
-app.secret_key = "healthcare_chatbot_super_secret_key_2026"
-app.config["SESSION_PERMANENT"] = True
-app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
 
 # -----------------------------
 # Chat state for step-by-step reminder conversation
@@ -46,7 +41,6 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-
 def init_db():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -57,16 +51,10 @@ def init_db():
             name TEXT NOT NULL,
             dosage TEXT NOT NULL,
             date TEXT NOT NULL,
-            end_date TEXT,
             time TEXT NOT NULL,
             schedule TEXT NOT NULL
         )
     """)
-
-    cursor.execute("PRAGMA table_info(medicine_reminders)")
-    columns = [row[1] for row in cursor.fetchall()]
-    if "end_date" not in columns:
-        cursor.execute("ALTER TABLE medicine_reminders ADD COLUMN end_date TEXT")
 
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
@@ -83,80 +71,16 @@ def init_db():
     conn.commit()
     conn.close()
 
-
-def init_auth_tables():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS admins (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    conn.commit()
-    conn.close()
-
-
-def create_default_admin():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("SELECT * FROM admins WHERE email = ?", ("admin@gmail.com",))
-    existing_admin = cursor.fetchone()
-
-    if not existing_admin:
-        hashed_password = generate_password_hash("admin123")
-        cursor.execute("""
-            INSERT INTO admins (full_name, email, password)
-            VALUES (?, ?, ?)
-        """, ("Admin", "admin@gmail.com", hashed_password))
-        conn.commit()
-
-    conn.close()
-
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "user_id" not in session:
-            return redirect(url_for("login"))
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if "admin_id" not in session:
-            return redirect(url_for("admin_login"))
-        return f(*args, **kwargs)
-    return decorated_function
-
 # -----------------------------
 # Medicine reminder DB functions
 # -----------------------------
-def add_medicine_reminder(name, dosage, reminder_date, reminder_time, schedule, end_date=None):
+def add_medicine_reminder(name, dosage, reminder_date, reminder_time, schedule):
     conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute("""
-        INSERT INTO medicine_reminders (name, dosage, date, end_date, time, schedule)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, (name, dosage, reminder_date, end_date, reminder_time, schedule))
+        INSERT INTO medicine_reminders (name, dosage, date, time, schedule)
+        VALUES (?, ?, ?, ?, ?)
+    """, (name, dosage, reminder_date, reminder_time, schedule))
     conn.commit()
     reminder_id = cursor.lastrowid
     conn.close()
@@ -166,11 +90,9 @@ def add_medicine_reminder(name, dosage, reminder_date, reminder_time, schedule, 
         "name": name,
         "dosage": dosage,
         "date": reminder_date,
-        "end_date": end_date,
         "time": reminder_time,
         "schedule": schedule
     }
-
 
 def get_all_medicine_reminders():
     conn = get_db_connection()
@@ -182,7 +104,6 @@ def get_all_medicine_reminders():
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
-
 
 def get_today_medicine_reminders():
     today = date.today().strftime("%Y-%m-%d")
@@ -223,7 +144,6 @@ def add_appointment(doctor, hospital, appointment_date, appointment_time, purpos
         "location": location
     }
 
-
 def get_all_appointments():
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -234,7 +154,6 @@ def get_all_appointments():
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
-
 
 def get_today_appointments():
     today = date.today().strftime("%Y-%m-%d")
@@ -248,7 +167,6 @@ def get_today_appointments():
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
-
 
 def get_next_appointment():
     today = date.today().strftime("%Y-%m-%d")
@@ -267,7 +185,6 @@ def get_next_appointment():
     conn.close()
     return dict(row) if row else None
 
-
 def get_appointments_by_doctor(doctor_name):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -279,7 +196,6 @@ def get_appointments_by_doctor(doctor_name):
     rows = cursor.fetchall()
     conn.close()
     return [dict(row) for row in rows]
-
 
 def get_tomorrow_appointments():
     tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -311,7 +227,6 @@ def format_all_appointments():
         )
     return "\n".join(lines)
 
-
 def format_today_appointments():
     appointments = get_today_appointments()
     today = date.today().strftime("%Y-%m-%d")
@@ -327,7 +242,6 @@ def format_today_appointments():
         )
     return "\n".join(lines)
 
-
 def format_next_appointment():
     appt = get_next_appointment()
 
@@ -339,7 +253,6 @@ def format_next_appointment():
         f"on {appt['date']} at {appt['time']}. Location: {appt['location']}. "
         f"Purpose: {appt['purpose']}."
     )
-
 
 def format_appointments_by_doctor(doctor_name):
     appointments = get_appointments_by_doctor(doctor_name)
@@ -356,7 +269,6 @@ def format_appointments_by_doctor(doctor_name):
         )
     return "\n".join(lines)
 
-
 def format_tomorrow_appointments():
     appointments = get_tomorrow_appointments()
     tomorrow = (date.today() + timedelta(days=1)).strftime("%Y-%m-%d")
@@ -371,6 +283,63 @@ def format_tomorrow_appointments():
             f"Location: {appt['location']}. Purpose: {appt['purpose']}."
         )
     return "\n".join(lines)
+
+# -----------------------------
+# Update reminder
+# -----------------------------
+@app.route("/update_medicine", methods=["POST"])
+def update_medicine():
+    data = request.get_json()
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        UPDATE medicine_reminders
+        SET name=?, dosage=?, date=?, time=?, schedule=?
+        WHERE id=?
+    """, (
+        data["name"],
+        data["dosage"],
+        data["date"],
+        data["time"],
+        data["schedule"],
+        data["id"]
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success"})
+
+# -----------------------------
+# Delete reminder
+# -----------------------------
+@app.route("/delete_medicine/<int:reminder_id>", methods=["DELETE"])
+def delete_medicine(reminder_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM medicine_reminders WHERE id=?", (reminder_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "deleted"})
+
+# -----------------------------
+# Add reminder manually
+# -----------------------------
+@app.route("/add_medicine", methods=["POST"])
+def add_medicine():
+    data = request.get_json()
+
+    reminder = add_medicine_reminder(
+        data["name"],
+        data["dosage"],
+        data["date"],
+        data["time"],
+        data["schedule"]
+    )
+
+    return jsonify(reminder)
 
 # -----------------------------
 # Symptom checker
@@ -492,7 +461,6 @@ def normalize_time(raw_time):
 
     return None
 
-
 def normalize_date(raw_date):
     text = raw_date.strip().lower()
 
@@ -573,35 +541,14 @@ def format_all_reminders():
 
     lines = ["Your medicine reminders are:"]
     for i, med in enumerate(reminders, start=1):
-        if str(med.get("schedule", "")).lower() == "daily":
-            lines.append(
-                f"{i}. {med['name']} - {med['dosage']} - from {med['date']} until {med.get('end_date', 'Not set')} at {med['time']} - {med['schedule']}"
-            )
-        else:
-            lines.append(
-                f"{i}. {med['name']} - {med['dosage']} - {med['date']} at {med['time']} - {med['schedule']}"
-            )
+        lines.append(
+            f"{i}. {med['name']} - {med['dosage']} - {med['date']} at {med['time']} - {med['schedule']}"
+        )
     return "\n".join(lines)
-
 
 def format_today_reminders():
     today = date.today().strftime("%Y-%m-%d")
-    reminders = get_all_medicine_reminders()
-
-    today_list = []
-    for med in reminders:
-        schedule = str(med.get("schedule", "")).lower()
-
-        if schedule == "daily":
-            start_date = med.get("date")
-            end_date = med.get("end_date")
-            if start_date and end_date and start_date <= today <= end_date:
-                today_list.append(med)
-        else:
-            if med.get("date") == today:
-                today_list.append(med)
-
-    today_list.sort(key=lambda x: x["time"])
+    today_list = get_today_medicine_reminders()
 
     if not today_list:
         return f"You have no medicine reminders for today ({today})."
@@ -613,29 +560,14 @@ def format_today_reminders():
         )
     return "\n".join(lines)
 
-
 def get_next_today_dosage():
+    today_list = get_today_medicine_reminders()
     today = date.today().strftime("%Y-%m-%d")
-    now_time = datetime.now().strftime("%H:%M")
-    reminders = get_all_medicine_reminders()
-
-    today_list = []
-    for med in reminders:
-        schedule = str(med.get("schedule", "")).lower()
-
-        if schedule == "daily":
-            start_date = med.get("date")
-            end_date = med.get("end_date")
-            if start_date and end_date and start_date <= today <= end_date:
-                today_list.append(med)
-        else:
-            if med.get("date") == today:
-                today_list.append(med)
-
-    today_list.sort(key=lambda x: x["time"])
 
     if not today_list:
         return f"You have no medicine reminders for today ({today})."
+
+    now_time = datetime.now().strftime("%H:%M")
 
     for med in today_list:
         if med["time"] >= now_time:
@@ -658,15 +590,13 @@ def save_reminder_from_state():
         data["dosage"],
         data["date"],
         data["time"],
-        data["schedule"],
-        data.get("end_date")
+        data["schedule"]
     )
 
     chat_state["mode"] = None
     chat_state["reminder_data"] = {}
 
     return medicine
-
 
 def handle_reminder_conversation(message):
     if chat_state["mode"] == "awaiting_reminder_name":
@@ -676,24 +606,8 @@ def handle_reminder_conversation(message):
 
     if chat_state["mode"] == "awaiting_reminder_dosage":
         chat_state["reminder_data"]["dosage"] = message.strip()
-        chat_state["mode"] = "awaiting_reminder_schedule"
-        return "Should I set it as once or daily?"
-
-    if chat_state["mode"] == "awaiting_reminder_schedule":
-        schedule_text = message.strip().lower()
-
-        if schedule_text not in ["once", "daily"]:
-            return "Please type only once or daily."
-
-        chat_state["reminder_data"]["schedule"] = schedule_text.title()
-
-        if schedule_text == "once":
-            chat_state["mode"] = "awaiting_reminder_date"
-            return "What date should I set it for? Please use format YYYY-MM-DD."
-
-        if schedule_text == "daily":
-            chat_state["mode"] = "awaiting_reminder_start_date"
-            return "What start date should I set it from? Please use format YYYY-MM-DD."
+        chat_state["mode"] = "awaiting_reminder_date"
+        return "What date should I set it for? Please use format YYYY-MM-DD."
 
     if chat_state["mode"] == "awaiting_reminder_date":
         date_text = message.strip()
@@ -703,35 +617,6 @@ def handle_reminder_conversation(message):
             return "Please enter a valid date. Example: 2026-03-21."
 
         chat_state["reminder_data"]["date"] = parsed_date
-        chat_state["reminder_data"]["end_date"] = None
-        chat_state["mode"] = "awaiting_reminder_time"
-        return "What time should I set it for? For example: 8 PM or 08:30 AM."
-
-    if chat_state["mode"] == "awaiting_reminder_start_date":
-        date_text = message.strip()
-        parsed_date = normalize_date(date_text)
-
-        if not parsed_date:
-            return "Please enter a valid start date. Example: 2026-03-21."
-
-        chat_state["reminder_data"]["date"] = parsed_date
-        chat_state["mode"] = "awaiting_reminder_end_date"
-        return "What end date should I set it until? Please use format YYYY-MM-DD."
-
-    if chat_state["mode"] == "awaiting_reminder_end_date":
-        date_text = message.strip()
-        parsed_date = normalize_date(date_text)
-
-        if not parsed_date:
-            return "Please enter a valid end date. Example: 2026-03-30."
-
-        start_date = datetime.strptime(chat_state["reminder_data"]["date"], "%Y-%m-%d")
-        end_date = datetime.strptime(parsed_date, "%Y-%m-%d")
-
-        if end_date < start_date:
-            return "End date cannot be before start date. Please enter a valid end date."
-
-        chat_state["reminder_data"]["end_date"] = parsed_date
         chat_state["mode"] = "awaiting_reminder_time"
         return "What time should I set it for? For example: 8 PM or 08:30 AM."
 
@@ -743,17 +628,15 @@ def handle_reminder_conversation(message):
             return "Please enter a valid time, for example: 8 PM or 08:30 AM."
 
         chat_state["reminder_data"]["time"] = parsed_time
+        chat_state["mode"] = "awaiting_reminder_schedule"
+        return "How often should I set it? For example: daily, once, morning, evening."
+
+    if chat_state["mode"] == "awaiting_reminder_schedule":
+        chat_state["reminder_data"]["schedule"] = message.strip().title()
         medicine = save_reminder_from_state()
-
-        if medicine["schedule"].lower() == "daily":
-            return (
-                f"Daily reminder added successfully for {medicine['name']} with dosage {medicine['dosage']} "
-                f"from {medicine['date']} until {medicine['end_date']} at {medicine['time']}."
-            )
-
         return (
-            f"One-time reminder added successfully for {medicine['name']} with dosage {medicine['dosage']} "
-            f"on {medicine['date']} at {medicine['time']}."
+            f"Reminder added successfully for {medicine['name']} with dosage {medicine['dosage']} "
+            f"on {medicine['date']} at {medicine['time']} with schedule {medicine['schedule']}."
         )
 
     return None
@@ -772,7 +655,6 @@ def calculate_distance_km(lat1, lon1, lat2, lon2):
     r = 6371
     return round(c * r, 2)
 
-
 def is_nearby_search_query(message):
     msg = message.lower()
     nearby_words = ["near me", "nearby", "closest", "nearest"]
@@ -782,7 +664,6 @@ def is_nearby_search_query(message):
         "heart checkup", "skin doctor", "dermatologist"
     ]
     return any(a in msg for a in nearby_words) and any(b in msg for b in place_words)
-
 
 def detect_place_type(message):
     msg = message.lower()
@@ -809,7 +690,6 @@ def detect_place_type(message):
         return "doctor"
 
     return "hospital"
-
 
 def build_overpass_query(lat, lon, place_type):
     if place_type == "pharmacy":
@@ -881,7 +761,6 @@ def build_overpass_query(lat, lon, place_type):
     out center tags;
     """
 
-
 def matches_specialty(tags, place_type):
     if place_type in ["pharmacy", "dentist", "clinic", "doctor", "hospital"]:
         return True
@@ -908,7 +787,6 @@ def matches_specialty(tags, place_type):
         return any(word in searchable_text for word in keywords)
 
     return True
-
 
 def search_nearby_places(lat, lon, place_type):
     overpass_url = "https://overpass-api.de/api/interpreter"
@@ -967,7 +845,6 @@ def search_nearby_places(lat, lon, place_type):
 
     results.sort(key=lambda x: x["distance_km"])
     return results[:10]
-
 
 def format_nearby_results(message, lat, lon):
     place_type = detect_place_type(message)
@@ -1171,280 +1048,33 @@ def chatbot_response(message, lat=None, lon=None):
     return get_general_ai_response(message)
 
 # -----------------------------
-# Auth routes
-# -----------------------------
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        full_name = request.form.get("full_name", "").strip()
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "").strip()
-
-        if not full_name or not email or not password:
-            flash("All fields are required.")
-            return redirect(url_for("register"))
-
-        hashed_password = generate_password_hash(password)
-
-        try:
-            conn = get_db_connection()
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT INTO users (full_name, email, password)
-                VALUES (?, ?, ?)
-            """, (full_name, email, hashed_password))
-            conn.commit()
-            conn.close()
-
-            flash("Registration successful. Please login.")
-            return redirect(url_for("login"))
-
-        except sqlite3.IntegrityError:
-            flash("Email already exists. Please use another email.")
-            return redirect(url_for("register"))
-
-    return render_template("register.html")
-
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "").strip()
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-        user = cursor.fetchone()
-        conn.close()
-
-        if user and check_password_hash(user["password"], password):
-            session.clear()
-            session.permanent = True
-            session["user_id"] = user["id"]
-            session["user_name"] = user["full_name"]
-            return redirect(url_for("user_dashboard"))
-
-        flash("Invalid email or password.")
-        return redirect(url_for("login"))
-
-    return render_template("login.html")
-
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-
-@app.route("/admin/login", methods=["GET", "POST"])
-def admin_login():
-    if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
-        password = request.form.get("password", "").strip()
-
-        conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM admins WHERE email = ?", (email,))
-        admin = cursor.fetchone()
-        conn.close()
-
-        if admin and check_password_hash(admin["password"], password):
-            session.clear()
-            session.permanent = True
-            session["admin_id"] = admin["id"]
-            session["admin_name"] = admin["full_name"]
-            return redirect(url_for("admin_dashboard"))
-
-        flash("Invalid admin email or password.")
-        return redirect(url_for("admin_login"))
-
-    return render_template("admin_login.html")
-
-
-@app.route("/admin/logout")
-def admin_logout():
-    session.clear()
-    return redirect(url_for("admin_login"))
-
-
-@app.route("/admin/dashboard")
-@admin_required
-def admin_dashboard():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, full_name, email, created_at FROM users ORDER BY id DESC")
-    users = cursor.fetchall()
-    conn.close()
-    return render_template("admin_dashboard.html", users=users)
-
-
-@app.route("/admin/users")
-@admin_required
-def admin_users():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("SELECT id, full_name, email, created_at FROM users ORDER BY id DESC")
-    users = cursor.fetchall()
-    conn.close()
-    return render_template("admin_users.html", users=users)
-
-@app.route("/admin/delete_user/<int:user_id>", methods=["DELETE"])
-@admin_required
-def admin_delete_user(user_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "success"})
-
-@app.route("/admin/appointments")
-@admin_required
-def admin_appointments():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM appointments
-        ORDER BY date ASC, time ASC
-    """)
-    appointments = cursor.fetchall()
-    conn.close()
-    return render_template("admin_appointments.html", appointments=appointments)
-
-
-@app.route("/admin/reminders")
-@admin_required
-def admin_reminders():
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("""
-        SELECT * FROM medicine_reminders
-        ORDER BY date ASC, time ASC
-    """)
-    reminders = cursor.fetchall()
-    conn.close()
-
-    today = date.today().strftime("%Y-%m-%d")
-
-    return render_template(
-        "admin_reminders.html",
-        reminders=reminders,
-        today=today
-    )
-
-
-@app.route("/admin/alerts")
-@admin_required
-def admin_alerts():
-    today = date.today().strftime("%Y-%m-%d")
-    now_time = datetime.now().strftime("%H:%M")
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        SELECT * FROM medicine_reminders
-        WHERE schedule = 'Once' AND date < ?
-        ORDER BY date ASC, time ASC
-    """, (today,))
-    expired_once = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT * FROM medicine_reminders
-        WHERE schedule = 'Daily' AND end_date IS NOT NULL AND end_date < ?
-        ORDER BY end_date ASC, time ASC
-    """, (today,))
-    expired_daily = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT * FROM appointments
-        WHERE date = ? AND time < ?
-        ORDER BY time ASC
-    """, (today, now_time))
-    missed_appointments = cursor.fetchall()
-
-    conn.close()
-
-    return render_template(
-        "admin_alerts.html",
-        expired_once=expired_once,
-        expired_daily=expired_daily,
-        missed_appointments=missed_appointments
-    )
-
-
-@app.route("/admin/requests")
-@admin_required
-def admin_requests():
-    demo_requests = [
-        {
-            "id": 1,
-            "name": "Demo User",
-            "type": "Support",
-            "message": "Need help understanding medicine reminder setup.",
-            "status": "Pending"
-        },
-        {
-            "id": 2,
-            "name": "Demo User 2",
-            "type": "Appointment",
-            "message": "Requested reschedule for upcoming appointment.",
-            "status": "Open"
-        }
-    ]
-    return render_template("admin_requests.html", requests_list=demo_requests)
-
-# -----------------------------
 # Routes
 # -----------------------------
 @app.route("/")
 def home():
-    if "user_id" in session:
-        return redirect(url_for("user_dashboard"))
-    if "admin_id" in session:
-        return redirect(url_for("admin_dashboard"))
-    return redirect(url_for("login"))
-
-
-@app.route("/dashboard")
-@login_required
-def user_dashboard():
-    return render_template("user_dashboard.html")
-
+    return render_template("index.html")
 
 @app.route("/chatbot")
-@login_required
 def chatbot_page():
     return render_template("chatbot.html")
 
-
 @app.route("/medicine-reminder")
-@login_required
 def medicine_reminder_page():
     return render_template("medicine_reminder.html")
 
-
 @app.route("/appointments")
-@login_required
 def appointments_page():
     return render_template("appointments.html")
 
-
 @app.route("/nearby-pharmacy")
-@login_required
 def nearby_pharmacy_page():
     return render_template("nearby_pharmacy.html")
 
-
 @app.route("/nearby-hospital")
-@login_required
 def nearby_hospital_page():
     return render_template("nearby_hospital.html")
 
-
 @app.route("/chat", methods=["POST"])
-@login_required
 def chat():
     data = request.get_json()
     message = data.get("message", "")
@@ -1461,75 +1091,14 @@ def chat():
     reply = chatbot_response(message, lat, lon)
     return jsonify({"reply": reply})
 
-
 @app.route("/get_medicines", methods=["GET"])
-@login_required
 def get_medicines():
     return jsonify(get_all_medicine_reminders())
 
 # -----------------------------
-# Reminder CRUD routes
-# -----------------------------
-@app.route("/add_medicine", methods=["POST"])
-@login_required
-def add_medicine():
-    data = request.get_json()
-
-    reminder = add_medicine_reminder(
-        data["name"],
-        data["dosage"],
-        data["date"],
-        data["time"],
-        data["schedule"],
-        data.get("end_date")
-    )
-
-    return jsonify(reminder)
-
-
-@app.route("/update_medicine", methods=["POST"])
-@login_required
-def update_medicine():
-    data = request.get_json()
-
-    conn = get_db_connection()
-    cursor = conn.cursor()
-
-    cursor.execute("""
-        UPDATE medicine_reminders
-        SET name=?, dosage=?, date=?, end_date=?, time=?, schedule=?
-        WHERE id=?
-    """, (
-        data["name"],
-        data["dosage"],
-        data["date"],
-        data.get("end_date"),
-        data["time"],
-        data["schedule"],
-        data["id"]
-    ))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"status": "success"})
-
-
-@app.route("/delete_medicine/<int:reminder_id>", methods=["DELETE"])
-@login_required
-def delete_medicine(reminder_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM medicine_reminders WHERE id=?", (reminder_id,))
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "deleted"})
-
-# -----------------------------
-# Appointment CRUD routes
+# Add appointment manually
 # -----------------------------
 @app.route("/add_appointment", methods=["POST"])
-@login_required
 def add_appointment_route():
     data = request.get_json()
 
@@ -1544,15 +1113,11 @@ def add_appointment_route():
 
     return jsonify(appointment)
 
-
 @app.route("/get_appointments", methods=["GET"])
-@login_required
 def get_appointments():
     return jsonify(get_all_appointments())
 
-
 @app.route("/update_appointment", methods=["POST"])
-@login_required
 def update_appointment():
     data = request.get_json()
 
@@ -1578,9 +1143,7 @@ def update_appointment():
 
     return jsonify({"status": "success"})
 
-
 @app.route("/delete_appointment/<int:appointment_id>", methods=["DELETE"])
-@login_required
 def delete_appointment(appointment_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1589,11 +1152,7 @@ def delete_appointment(appointment_id):
     conn.close()
     return jsonify({"status": "deleted"})
 
-# -----------------------------
-# Nearby API routes
-# -----------------------------
 @app.route("/api/nearby_pharmacy", methods=["POST"])
-@login_required
 def api_nearby_pharmacy():
     data = request.get_json()
     lat = float(data["lat"])
@@ -1601,9 +1160,7 @@ def api_nearby_pharmacy():
     results = search_nearby_places(lat, lon, "pharmacy")
     return jsonify(results)
 
-
 @app.route("/api/nearby_hospital", methods=["POST"])
-@login_required
 def api_nearby_hospital():
     data = request.get_json()
     lat = float(data["lat"])
@@ -1611,9 +1168,6 @@ def api_nearby_hospital():
     results = search_nearby_places(lat, lon, "hospital")
     return jsonify(results)
 
-
 if __name__ == "__main__":
     init_db()
-    init_auth_tables()
-    create_default_admin()
     app.run(host="0.0.0.0", port=5000, debug=True)

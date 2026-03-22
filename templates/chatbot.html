@@ -3,17 +3,356 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Chatbot</title>
+    <title>AI Healthcare Chatbot</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
+            background-size: 300% 300%;
+            animation: gradientMove 10s ease infinite;
+            min-height: 100vh;
+            color: white;
+        }
+
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .chatbot-page-wrapper {
+            min-height: 100vh;
+            background: rgba(0, 0, 0, 0.30);
+            padding: 30px 20px;
+        }
+
+        .chatbot-page-container {
+            width: 100%;
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 24px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.30);
+            padding: 24px;
+        }
+
+        .chatbot-topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .chatbot-topbar h2 {
+            margin: 0;
+            font-size: 38px;
+            font-weight: bold;
+            color: white;
+            flex: 1;
+            text-align: center;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 12px 18px;
+            border-radius: 12px;
+            background: #111827;
+            color: white;
+            text-decoration: none;
+            border: 1px solid rgba(255,255,255,0.15);
+            transition: 0.3s;
+            white-space: nowrap;
+        }
+
+        .back-btn:hover {
+            background: #1f2937;
+        }
+
+        .voice-controls {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 18px;
+        }
+
+        .voice-toggle-box {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #e5e7eb;
+        }
+
+        .voice-label {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .chat-box {
+            height: 62vh;
+            min-height: 480px;
+            max-height: 70vh;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 16px 18px;
+            margin-bottom: 14px;
+            border-radius: 18px;
+            line-height: 1.6;
+            font-size: 17px;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            background: rgba(255, 255, 255, 0.10);
+            color: white;
+            align-self: flex-start;
+        }
+
+        .user-message {
+            background: #2563eb;
+            color: white;
+            margin-left: auto;
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        #userInput {
+            flex: 1;
+            min-width: 260px;
+            padding: 16px 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.08);
+            color: white;
+            font-size: 16px;
+            outline: none;
+        }
+
+        #userInput::placeholder {
+            color: #cbd5e1;
+        }
+
+        .mic-btn,
+        #sendBtn {
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .mic-btn {
+            width: 58px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.12);
+        }
+
+        .mic-btn:hover {
+            background: rgba(255,255,255,0.16);
+        }
+
+        .mic-icon {
+            width: 26px;
+            height: 26px;
+            fill: #000000;
+        }
+
+        #sendBtn {
+            padding: 16px 24px;
+            background: #14b8a6;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        #sendBtn:hover {
+            background: #0f9f90;
+        }
+
+        .chat-note {
+            margin-top: 18px;
+            text-align: center;
+            color: #cbd5e1;
+            font-size: 15px;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 56px;
+            height: 30px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background-color: rgba(255,255,255,0.20);
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 22px;
+            width: 22px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        .switch input:checked + .slider {
+            background-color: #14b8a6;
+        }
+
+        .switch input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        @media (max-width: 768px) {
+            .chatbot-topbar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .chatbot-topbar h2 {
+                text-align: center;
+                font-size: 28px;
+            }
+
+            .voice-controls {
+                justify-content: center;
+            }
+
+            .chat-box {
+                height: 58vh;
+                min-height: 380px;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .chat-input-container {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .mic-btn,
+            #sendBtn,
+            #userInput {
+                width: 100%;
+            }
+        }
+        body.light-mode {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0, #ffffff);
+    background-size: 300% 300%;
+    color: #111827;
+}
+
+body.light-mode .chatbot-page-wrapper {
+    background: rgba(255, 255, 255, 0.45);
+}
+
+body.light-mode .chatbot-page-container {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.10);
+}
+
+body.light-mode .chatbot-topbar h2,
+body.light-mode .chat-note,
+body.light-mode .voice-label {
+    color: #111827;
+}
+
+body.light-mode .back-btn {
+    background: #e2e8f0;
+    color: #111827;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.light-mode .back-btn:hover {
+    background: #cbd5e1;
+}
+
+body.light-mode .chat-box {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+body.light-mode .bot-message {
+    background: #e2e8f0;
+    color: #111827;
+}
+
+body.light-mode .user-message {
+    background: #14b8a6;
+    color: white;
+}
+
+body.light-mode #userInput {
+    background: white;
+    color: #111827;
+    border: 1px solid rgba(15, 23, 42, 0.10);
+}
+
+body.light-mode #userInput::placeholder {
+    color: #64748b;
+}
+
+body.light-mode #sendBtn,
+body.light-mode .mic-btn {
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+body.light-mode .voice-toggle-box {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+}
+    </style>
 </head>
 <body>
-
     <div class="chatbot-page-wrapper">
         <div class="chatbot-page-container">
 
             <div class="chatbot-topbar">
-                <a href="/" class="back-btn">← Back</a>
+                <a href="/dashboard" class="back-btn">← Back</a>
                 <h2>AI Healthcare Chatbot</h2>
+                <div style="width: 92px;"></div>
             </div>
 
             <div class="voice-controls top-voice-only">
@@ -53,5 +392,7 @@
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>

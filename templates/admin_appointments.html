@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Appointments</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
+            background-size: 300% 300%;
+            animation: gradientMove 10s ease infinite;
+            min-height: 100vh;
+            color: white;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .overlay {
+            min-height: 100vh;
+            background: rgba(0,0,0,0.35);
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1250px;
+            margin: auto;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            text-decoration: none;
+            background: #111827;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            font-weight: bold;
+        }
+        .table-wrap {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 14px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            text-align: left;
+        }
+        th { background: rgba(255,255,255,0.08); }
+        .empty { padding: 20px; color: #d1d5db; }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="container">
+            <div class="topbar">
+                <div>
+                    <h1>Manage Appointments</h1>
+                    <p>All appointment records</p>
+                </div>
+                <a class="back-btn" href="/admin/dashboard">← Back to Dashboard</a>
+            </div>
+
+            <div class="table-wrap">
+                {% if appointments %}
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Doctor</th>
+                            <th>Hospital</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Purpose</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for appt in appointments %}
+                        <tr>
+                            <td>{{ appt["id"] }}</td>
+                            <td>{{ appt["doctor"] }}</td>
+                            <td>{{ appt["hospital"] }}</td>
+                            <td>{{ appt["date"] }}</td>
+                            <td>{{ appt["time"] }}</td>
+                            <td>{{ appt["purpose"] }}</td>
+                            <td>{{ appt["location"] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="empty">No appointments found.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

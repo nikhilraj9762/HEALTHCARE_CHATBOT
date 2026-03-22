@@ -5,6 +5,379 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Medicine Reminders</title>
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
+        background-size: 300% 300%;
+        animation: gradientMove 10s ease infinite;
+        min-height: 100vh;
+        color: white;
+        transition: background 0.35s ease, color 0.35s ease;
+    }
+
+    @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .chatbot-page-wrapper {
+        min-height: 100vh;
+        background: rgba(0, 0, 0, 0.30);
+        padding: 30px 20px;
+        transition: background 0.35s ease;
+    }
+
+    .chatbot-page-container {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 24px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.30);
+        padding: 24px;
+        transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .chatbot-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 24px;
+    }
+
+    .chatbot-topbar h2 {
+        margin: 0;
+        font-size: 38px;
+        font-weight: bold;
+        color: white;
+        flex: 1;
+        text-align: center;
+    }
+
+    .back-btn {
+        display: inline-block;
+        padding: 12px 18px;
+        border-radius: 12px;
+        background: #111827;
+        color: white;
+        text-decoration: none;
+        border: 1px solid rgba(255,255,255,0.15);
+        transition: 0.3s;
+        white-space: nowrap;
+    }
+
+    .back-btn:hover {
+        background: #1f2937;
+    }
+
+    .add-btn {
+        padding: 14px 22px;
+        border: none;
+        border-radius: 14px;
+        background: #14b8a6;
+        color: white;
+        font-size: 18px;
+        cursor: pointer;
+        margin-bottom: 24px;
+        transition: 0.3s;
+    }
+
+    .add-btn:hover {
+        background: #0f9f90;
+    }
+
+    .medicine-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: 22px;
+    }
+
+    .medicine-card {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 20px;
+        padding: 24px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.20);
+        transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .medicine-card h3 {
+        margin-top: 0;
+        margin-bottom: 16px;
+        font-size: 32px;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .status-expired {
+        color: #ef4444;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .status-upcoming {
+        color: #22c55e;
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+    .medicine-card p {
+        margin: 10px 0;
+        font-size: 20px;
+        color: #dbe4ee;
+        line-height: 1.5;
+    }
+
+    .card-actions {
+        display: flex;
+        gap: 14px;
+        margin-top: 22px;
+        flex-wrap: wrap;
+    }
+
+    .card-actions button {
+        flex: 1;
+        min-width: 120px;
+        padding: 14px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 18px;
+        transition: 0.3s;
+        background: rgba(255,255,255,0.12);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .card-actions button:hover {
+        background: rgba(255,255,255,0.18);
+    }
+
+    .modal {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.55);
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+        z-index: 1000;
+    }
+
+    .modal-content {
+        width: 100%;
+        max-width: 520px;
+        background: #111827;
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 20px;
+        padding: 28px;
+        box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+        transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .modal-content h3 {
+        margin-top: 0;
+        margin-bottom: 18px;
+        font-size: 28px;
+        color: white;
+        text-align: center;
+    }
+
+    .modal-content input,
+    .modal-content select {
+        width: 100%;
+        padding: 14px 16px;
+        margin-bottom: 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.10);
+        background: rgba(255,255,255,0.08);
+        color: white;
+        font-size: 16px;
+        outline: none;
+    }
+
+    .modal-content input::placeholder {
+        color: #cbd5e1;
+    }
+
+    .modal-content select option {
+        background: #111827;
+        color: white;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .modal-actions button {
+        flex: 1;
+        min-width: 120px;
+        padding: 14px;
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: 0.3s;
+    }
+
+    .modal-actions button:first-child {
+        background: #14b8a6;
+        color: white;
+    }
+
+    .modal-actions button:first-child:hover {
+        background: #0f9f90;
+    }
+
+    .modal-actions button:last-child {
+        background: rgba(255,255,255,0.10);
+        color: white;
+        border: 1px solid rgba(255,255,255,0.10);
+    }
+
+    .modal-actions button:last-child:hover {
+        background: rgba(255,255,255,0.18);
+    }
+
+    #endDateGroup {
+        display: none;
+    }
+
+    /* LIGHT MODE */
+    body.light-mode {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0, #ffffff);
+        background-size: 300% 300%;
+        color: #111827;
+    }
+
+    body.light-mode .chatbot-page-wrapper {
+        background: rgba(255, 255, 255, 0.40);
+    }
+
+    body.light-mode .chatbot-page-container {
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.10);
+    }
+
+    body.light-mode .chatbot-topbar h2 {
+        color: #111827;
+    }
+
+    body.light-mode .back-btn {
+        background: #e2e8f0;
+        color: #111827;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    body.light-mode .back-btn:hover {
+        background: #cbd5e1;
+    }
+
+    body.light-mode .medicine-card {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    body.light-mode .medicine-card h3,
+    body.light-mode .medicine-card p {
+        color: #111827;
+    }
+
+    body.light-mode .card-actions button {
+        background: #e2e8f0;
+        color: #111827;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    body.light-mode .card-actions button:hover {
+        background: #cbd5e1;
+    }
+
+    body.light-mode .modal {
+        background: rgba(15, 23, 42, 0.25);
+    }
+
+    body.light-mode .modal-content {
+        background: rgba(255, 255, 255, 0.97);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+    }
+
+    body.light-mode .modal-content h3 {
+        color: #111827;
+    }
+
+    body.light-mode .modal-content input,
+    body.light-mode .modal-content select {
+        background: white;
+        color: #111827;
+        border: 1px solid rgba(15, 23, 42, 0.12);
+    }
+
+    body.light-mode .modal-content input::placeholder {
+        color: #64748b;
+    }
+
+    body.light-mode .modal-content select option {
+        background: white;
+        color: #111827;
+    }
+
+    body.light-mode .modal-actions button:last-child {
+        background: #e2e8f0;
+        color: #111827;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    body.light-mode .modal-actions button:last-child:hover {
+        background: #cbd5e1;
+    }
+
+    @media (max-width: 768px) {
+        .chatbot-topbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .chatbot-topbar h2 {
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .medicine-card h3 {
+            font-size: 26px;
+        }
+
+        .medicine-card p {
+            font-size: 18px;
+        }
+    }
+</style>
 </head>
 
 <body>
@@ -13,20 +386,18 @@
 <div class="chatbot-page-container">
 
     <div class="chatbot-topbar">
-        <a href="/" class="back-btn">← Back</a>
+        <a href="/dashboard" class="back-btn">← Back</a>
         <h2>Medicine Reminders</h2>
+        <div style="width: 92px;"></div>
     </div>
 
-    <!-- ADD BUTTON -->
     <button class="add-btn" onclick="openForm()">+ Add Reminder</button>
 
-    <!-- LIST -->
     <div id="medicineReminderList" class="medicine-list"></div>
 
 </div>
 </div>
 
-<!-- MODAL -->
 <div id="reminderModal" class="modal">
 <div class="modal-content">
 
@@ -36,9 +407,19 @@
 
     <input type="text" id="name" placeholder="Medicine Name">
     <input type="text" id="dosage" placeholder="Dosage (e.g. 1 tablet)">
+
+    <select id="schedule" onchange="toggleEndDateField()">
+        <option value="Once">Once</option>
+        <option value="Daily">Daily</option>
+    </select>
+
     <input type="date" id="date">
+
+    <div id="endDateGroup">
+        <input type="date" id="end_date" placeholder="End Date">
+    </div>
+
     <input type="time" id="time">
-    <input type="text" id="schedule" placeholder="Schedule (daily, once, etc.)">
 
     <div class="modal-actions">
         <button onclick="saveReminder()">Save</button>
@@ -49,8 +430,19 @@
 </div>
 
 <script>
-
 let editMode = false;
+
+function toggleEndDateField() {
+    const schedule = document.getElementById("schedule").value;
+    const endDateGroup = document.getElementById("endDateGroup");
+
+    if (schedule === "Daily") {
+        endDateGroup.style.display = "block";
+    } else {
+        endDateGroup.style.display = "none";
+        document.getElementById("end_date").value = "";
+    }
+}
 
 async function loadReminders() {
     const res = await fetch("/get_medicines");
@@ -59,19 +451,62 @@ async function loadReminders() {
     const list = document.getElementById("medicineReminderList");
     list.innerHTML = "";
 
+    const now = new Date();
+
+    data.sort((a, b) => {
+        const dateTimeA = new Date(`${a.date}T${a.time}`);
+        const dateTimeB = new Date(`${b.date}T${b.time}`);
+        return dateTimeA - dateTimeB;
+    });
+
     data.forEach(rem => {
+        const safeName = String(rem.name).replace(/'/g, "\\'");
+        const safeDosage = String(rem.dosage).replace(/'/g, "\\'");
+        const safeDate = String(rem.date).replace(/'/g, "\\'");
+        const safeEndDate = String(rem.end_date || "").replace(/'/g, "\\'");
+        const safeTime = String(rem.time).replace(/'/g, "\\'");
+        const safeSchedule = String(rem.schedule).replace(/'/g, "\\'");
+
+        let isExpired = false;
+
+        if ((rem.schedule || "").toLowerCase() === "daily") {
+            if (rem.end_date) {
+                const endDateTime = new Date(`${rem.end_date}T23:59`);
+                isExpired = endDateTime < now;
+            }
+        } else {
+            const reminderDateTime = new Date(`${rem.date}T${rem.time}`);
+            isExpired = reminderDateTime < now;
+        }
+
+        const statusHtml = isExpired
+            ? `<span class="status-expired">Expired</span>`
+            : `<span class="status-upcoming">Active</span>`;
+
+        let dateHtml = `<p><b>Date:</b> ${rem.date}</p>`;
+
+        if ((rem.schedule || "").toLowerCase() === "daily") {
+            dateHtml = `
+                <p><b>Start Date:</b> ${rem.date}</p>
+                <p><b>End Date:</b> ${rem.end_date || "Not set"}</p>
+            `;
+        }
+
         const card = document.createElement("div");
         card.className = "medicine-card";
 
         card.innerHTML = `
-            <h3>${rem.name}</h3>
+            <h3>
+                <span>${rem.name}</span>
+                ${statusHtml}
+            </h3>
             <p><b>Dosage:</b> ${rem.dosage}</p>
-            <p><b>Date:</b> ${rem.date}</p>
+            ${dateHtml}
             <p><b>Time:</b> ${rem.time}</p>
             <p><b>Schedule:</b> ${rem.schedule}</p>
 
             <div class="card-actions">
-                <button onclick="editReminder(${rem.id}, '${rem.name}', '${rem.dosage}', '${rem.date}', '${rem.time}', '${rem.schedule}')">Edit</button>
+                <button onclick="editReminder(${rem.id}, '${safeName}', '${safeDosage}', '${safeDate}', '${safeEndDate}', '${safeTime}', '${safeSchedule}')">Edit</button>
                 <button onclick="deleteReminder(${rem.id})">Delete</button>
             </div>
         `;
@@ -81,37 +516,59 @@ async function loadReminders() {
 }
 
 function openForm() {
-    editMode = false;
-    document.getElementById("formTitle").innerText = "Add Reminder";
+    if (!editMode) {
+        document.getElementById("reminderId").value = "";
+        document.getElementById("name").value = "";
+        document.getElementById("dosage").value = "";
+        document.getElementById("schedule").value = "Once";
+        document.getElementById("date").value = "";
+        document.getElementById("end_date").value = "";
+        document.getElementById("time").value = "";
+        document.getElementById("formTitle").innerText = "Add Reminder";
+    }
+
+    toggleEndDateField();
     document.getElementById("reminderModal").style.display = "flex";
 }
 
 function closeForm() {
     document.getElementById("reminderModal").style.display = "none";
+    editMode = false;
 }
 
-function editReminder(id, name, dosage, date, time, schedule) {
+function editReminder(id, name, dosage, date, endDate, time, schedule) {
     editMode = true;
 
     document.getElementById("formTitle").innerText = "Edit Reminder";
     document.getElementById("reminderId").value = id;
     document.getElementById("name").value = name;
     document.getElementById("dosage").value = dosage;
-    document.getElementById("date").value = date;
-    document.getElementById("time").value = time;
     document.getElementById("schedule").value = schedule;
+    document.getElementById("date").value = date;
+    document.getElementById("end_date").value = endDate || "";
+    document.getElementById("time").value = time;
 
-    openForm();
+    toggleEndDateField();
+    document.getElementById("reminderModal").style.display = "flex";
 }
 
 async function saveReminder() {
+    const schedule = document.getElementById("schedule").value;
+    const endDate = document.getElementById("end_date").value;
+
+    if (schedule === "Daily" && !endDate) {
+        alert("Please select an end date for daily reminders.");
+        return;
+    }
+
     const data = {
         id: document.getElementById("reminderId").value,
         name: document.getElementById("name").value,
         dosage: document.getElementById("dosage").value,
         date: document.getElementById("date").value,
+        end_date: schedule === "Daily" ? endDate : null,
         time: document.getElementById("time").value,
-        schedule: document.getElementById("schedule").value
+        schedule: schedule
     };
 
     if (editMode) {
@@ -140,8 +597,7 @@ async function deleteReminder(id) {
 }
 
 loadReminders();
-
 </script>
-
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Alerts</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
+            background-size: 300% 300%;
+            animation: gradientMove 10s ease infinite;
+            min-height: 100vh;
+            color: white;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .overlay {
+            min-height: 100vh;
+            background: rgba(0,0,0,0.35);
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            text-decoration: none;
+            background: #111827;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            font-weight: bold;
+        }
+        .section {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .item {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+        .item:last-child {
+            border-bottom: none;
+        }
+        .empty {
+            color: #4ade80;
+            font-weight: bold;
+        }
+        .danger {
+            color: #f87171;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="container">
+            <div class="topbar">
+                <div>
+                    <h1>Check Alerts</h1>
+                    <p>Expired reminders and missed appointments</p>
+                </div>
+                <a class="back-btn" href="/admin/dashboard">← Back to Dashboard</a>
+            </div>
+
+            <div class="section">
+                <h2>Expired One-Time Reminders</h2>
+                {% if expired_once %}
+                    {% for rem in expired_once %}
+                    <div class="item">
+                        <span class="danger">{{ rem["name"] }}</span> — {{ rem["date"] }} at {{ rem["time"] }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty">No expired one-time reminders.</div>
+                {% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Expired Daily Reminders</h2>
+                {% if expired_daily %}
+                    {% for rem in expired_daily %}
+                    <div class="item">
+                        <span class="danger">{{ rem["name"] }}</span> — ended on {{ rem["end_date"] }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty">No expired daily reminders.</div>
+                {% endif %}
+            </div>
+
+            <div class="section">
+                <h2>Missed Today's Appointments</h2>
+                {% if missed_appointments %}
+                    {% for appt in missed_appointments %}
+                    <div class="item">
+                        <span class="danger">Dr. {{ appt["doctor"] }}</span> — {{ appt["date"] }} at {{ appt["time"] }} — {{ appt["hospital"] }}
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="empty">No missed appointments today.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</body>
+</html>

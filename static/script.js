@@ -14,6 +14,8 @@ let recognition = null;
 let isListening = false;
 
 function addMessage(text, sender) {
+    if (!chatMessages) return;
+
     const messageDiv = document.createElement("div");
     messageDiv.classList.add("message");
 
@@ -50,13 +52,15 @@ function requestLocationSilently() {
             currentLongitude = position.coords.longitude;
             console.log("Location captured:", currentLatitude, currentLongitude);
         },
-        function (error) {
+        function () {
             console.log("Location permission denied or unavailable.");
         }
     );
 }
 
 async function sendMessage() {
+    if (!userInput) return;
+
     const message = userInput.value.trim();
     if (message === "") return;
 
@@ -88,6 +92,7 @@ async function sendMessage() {
 }
 
 function sendQuickMessage(text) {
+    if (!userInput) return;
     userInput.value = text;
     sendMessage();
 }
@@ -115,8 +120,6 @@ if (userInput) {
 }
 
 if (micBtn) {
-    
-
     micBtn.addEventListener("click", function () {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -137,7 +140,6 @@ if (micBtn) {
         isListening = true;
 
         micBtn.disabled = true;
-        micBtn.innerHTML = "&#127908;";
 
         recognition.start();
 
@@ -161,13 +163,11 @@ if (micBtn) {
             alert("Voice recognition failed. Please try again.");
             isListening = false;
             micBtn.disabled = false;
-            micBtn.innerHTML = "&#127908;";
         };
 
         recognition.onend = function () {
             isListening = false;
             micBtn.disabled = false;
-            micBtn.innerHTML = "&#127908;";
 
             const spokenText = userInput.value.trim();
             if (spokenText !== "") {
@@ -200,10 +200,19 @@ async function loadMedicines() {
         medicines.forEach(med => {
             const card = document.createElement("div");
             card.classList.add("medicine-card");
+
+            let dateText = `<p><strong>Date:</strong> ${med.date}</p>`;
+            if ((med.schedule || "").toLowerCase() === "daily") {
+                dateText = `
+                    <p><strong>Start Date:</strong> ${med.date}</p>
+                    <p><strong>End Date:</strong> ${med.end_date || "Not set"}</p>
+                `;
+            }
+
             card.innerHTML = `
                 <h3>${med.name}</h3>
                 <p><strong>Dosage:</strong> ${med.dosage}</p>
-                <p><strong>Date:</strong> ${med.date}</p>
+                ${dateText}
                 <p><strong>Time:</strong> ${med.time}</p>
                 <p><strong>Schedule:</strong> ${med.schedule}</p>
             `;
@@ -212,6 +221,31 @@ async function loadMedicines() {
     } catch (error) {
         console.log("Failed to load medicines.");
     }
+}
+
+function isReminderDueToday(med, today, currentTime) {
+    const schedule = (med.schedule || "").toLowerCase();
+
+    if (schedule === "daily") {
+        if (!med.date || !med.end_date || !med.time) return false;
+
+        const startDate = med.date;
+        const endDate = med.end_date;
+
+        return today >= startDate && today <= endDate && med.time === currentTime;
+    }
+
+    return med.date === today && med.time === currentTime;
+}
+
+function getReminderKey(med, today) {
+    const schedule = (med.schedule || "").toLowerCase();
+
+    if (schedule === "daily") {
+        return `${med.id}_${today}_${med.time}_daily`;
+    }
+
+    return `${med.id}_${med.date}_${med.time}_once`;
 }
 
 function checkMedicineReminders() {
@@ -223,10 +257,17 @@ function checkMedicineReminders() {
         .then(response => response.json())
         .then(medicines => {
             medicines.forEach(med => {
-                const reminderKey = med.id + "_" + today + "_" + currentTime;
+                const reminderKey = getReminderKey(med, today);
 
-                if (med.date === today && med.time === currentTime && !alreadyReminded[reminderKey]) {
-                    const reminderText = `Reminder: It is time to take ${med.name}, dosage ${med.dosage}.`;
+                if (isReminderDueToday(med, today, currentTime) && !alreadyReminded[reminderKey]) {
+                    let reminderText = "";
+
+                    if ((med.schedule || "").toLowerCase() === "daily") {
+                        reminderText = `Daily reminder: It is time to take ${med.name}, dosage ${med.dosage}.`;
+                    } else {
+                        reminderText = `Reminder: It is time to take ${med.name}, dosage ${med.dosage}.`;
+                    }
+
                     alert(reminderText);
                     addMessage(reminderText, "bot");
                     speakText(reminderText);

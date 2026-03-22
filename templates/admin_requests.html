@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Requests</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
+            background-size: 300% 300%;
+            animation: gradientMove 10s ease infinite;
+            min-height: 100vh;
+            color: white;
+        }
+        @keyframes gradientMove {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        .overlay {
+            min-height: 100vh;
+            background: rgba(0,0,0,0.35);
+            padding: 30px 20px;
+        }
+        .container {
+            max-width: 1100px;
+            margin: auto;
+        }
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        .back-btn {
+            text-decoration: none;
+            background: #111827;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.15);
+            font-weight: bold;
+        }
+        .card {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 18px;
+            padding: 20px;
+            margin-bottom: 18px;
+        }
+        .status {
+            color: #93c5fd;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <div class="container">
+            <div class="topbar">
+                <div>
+                    <h1>View Requests</h1>
+                    <p>User support and request messages</p>
+                </div>
+                <a class="back-btn" href="/admin/dashboard">← Back to Dashboard</a>
+            </div>
+
+            {% for req in requests_list %}
+            <div class="card">
+                <h3>{{ req.name }}</h3>
+                <p><strong>Request Type:</strong> {{ req.type }}</p>
+                <p><strong>Message:</strong> {{ req.message }}</p>
+                <p><strong>Status:</strong> <span class="status">{{ req.status }}</span></p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
