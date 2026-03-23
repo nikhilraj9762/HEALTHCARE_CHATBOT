@@ -1,4 +1,88 @@
 /* Reset some default spacing */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+    margin: 0;
+  }
+
+  .container,
+  .page-container,
+  .dashboard-container,
+  .main-container,
+  .content-container,
+  .chatbot-container,
+  .appointments-container,
+  .reminder-container,
+  .nearby-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12px !important;
+  }
+
+  .cards,
+  .dashboard-cards,
+  .card-grid,
+  .grid {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .card,
+  .dashboard-card,
+  .info-card,
+  .feature-card {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .topbar,
+  .navbar,
+  .header,
+  .dashboard-header,
+  .page-header {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 10px !important;
+  }
+
+  .topbar button,
+  .navbar button,
+  .header button,
+  .btn,
+  button {
+    width: 100%;
+  }
+
+  input,
+  select,
+  textarea {
+    width: 100% !important;
+    font-size: 16px !important;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
 * {
     margin: 0;
     padding: 0;
