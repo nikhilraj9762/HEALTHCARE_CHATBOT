@@ -5,16 +5,31 @@ load_dotenv()
 import requests
 import re
 import sqlite3
+import os
+import json
+import threading
+import time
 from datetime import datetime, date, timedelta
 from symptom_service import is_symptom_query, get_ai_symptom_response, get_general_ai_response
 from math import radians, cos, sin, asin, sqrt
 from werkzeug.security import generate_password_hash, check_password_hash
 from functools import wraps
 
+try:
+    from pywebpush import webpush, WebPushException
+    PYWEBPUSH_AVAILABLE = True
+except Exception:
+    webpush = None
+    WebPushException = Exception
+    PYWEBPUSH_AVAILABLE = False
+
 app = Flask(__name__)
 app.secret_key = "healthcare_chatbot_super_secret_key_2026"
 app.config["SESSION_PERMANENT"] = True
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=7)
+
+PUSH_SCHEDULER_LOCK = threading.Lock()
+PUSH_SCHEDULER_STARTED = False
 
 # -----------------------------
 # Chat state for step-by-step reminder conversation
@@ -99,12 +114,58 @@ def init_db():
         )
     """)
 
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_medicine_reminders_user_date_time
+        ON medicine_reminders(user_id, date, time)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_appointments_user_date_time
+        ON appointments(user_id, date, time)
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS push_subscriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            endpoint TEXT NOT NULL,
+            p256dh TEXT NOT NULL,
+            auth TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, endpoint),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS notification_delivery_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            item_type TEXT NOT NULL,
+            item_id INTEGER NOT NULL,
+            occurrence_date TEXT NOT NULL,
+            occurrence_time TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_id, item_type, item_id, occurrence_date, occurrence_time),
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user
+        ON push_subscriptions(user_id)
+    """)
+
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_notification_delivery_user_date
+        ON notification_delivery_log(user_id, occurrence_date)
+    """)
+
     conn.commit()
     conn.close()
 
 
 def init_auth_tables():
-    # Kept for compatibility with your old structure
     conn = get_db_connection()
     cursor = conn.cursor()
 
@@ -166,6 +227,281 @@ def admin_required(f):
             return redirect(url_for("admin_login"))
         return f(*args, **kwargs)
     return decorated_function
+
+
+# -----------------------------
+# Push notification helpers (additive)
+# -----------------------------
+def get_vapid_config():
+    private_key_raw = os.getenv("VAPID_PRIVATE_KEY", "").strip()
+    private_key = private_key_raw
+    if private_key_raw and not os.path.exists(private_key_raw):
+        private_key = private_key_raw.replace("\\n", "\n")
+
+    return {
+        "public_key": os.getenv("VAPID_PUBLIC_KEY", "").strip(),
+        "private_key": private_key,
+        "claims_sub": os.getenv("VAPID_CLAIMS_SUB", "").strip()
+    }
+
+
+def get_user_push_subscriptions(user_id):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT endpoint, p256dh, auth
+        FROM push_subscriptions
+        WHERE user_id = ?
+    """, (user_id,))
+    rows = cursor.fetchall()
+    conn.close()
+
+    subscriptions = []
+    for row in rows:
+        subscriptions.append({
+            "endpoint": row["endpoint"],
+            "keys": {
+                "p256dh": row["p256dh"],
+                "auth": row["auth"]
+            }
+        })
+    return subscriptions
+
+
+def save_user_push_subscription(user_id, subscription):
+    endpoint = (subscription or {}).get("endpoint")
+    keys = (subscription or {}).get("keys") or {}
+    p256dh = keys.get("p256dh")
+    auth = keys.get("auth")
+
+    if not endpoint or not p256dh or not auth:
+        raise ValueError("Invalid subscription payload.")
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR REPLACE INTO push_subscriptions (id, user_id, endpoint, p256dh, auth, created_at)
+        VALUES (
+            (SELECT id FROM push_subscriptions WHERE user_id = ? AND endpoint = ?),
+            ?, ?, ?, ?, CURRENT_TIMESTAMP
+        )
+    """, (user_id, endpoint, user_id, endpoint, p256dh, auth))
+    conn.commit()
+    conn.close()
+
+
+def delete_user_push_subscription(user_id, endpoint):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        DELETE FROM push_subscriptions
+        WHERE user_id = ? AND endpoint = ?
+    """, (user_id, endpoint))
+    conn.commit()
+    conn.close()
+
+
+def notification_already_sent(cursor, user_id, item_type, item_id, occurrence_date, occurrence_time):
+    cursor.execute("""
+        SELECT 1
+        FROM notification_delivery_log
+        WHERE user_id = ?
+          AND item_type = ?
+          AND item_id = ?
+          AND occurrence_date = ?
+          AND occurrence_time = ?
+        LIMIT 1
+    """, (user_id, item_type, item_id, occurrence_date, occurrence_time))
+    return cursor.fetchone() is not None
+
+
+def mark_notification_sent(user_id, item_type, item_id, occurrence_date, occurrence_time):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT OR IGNORE INTO notification_delivery_log (
+            user_id, item_type, item_id, occurrence_date, occurrence_time
+        ) VALUES (?, ?, ?, ?, ?)
+    """, (user_id, item_type, item_id, occurrence_date, occurrence_time))
+    conn.commit()
+    conn.close()
+
+
+def build_due_push_events(now_dt):
+    today = now_dt.strftime("%Y-%m-%d")
+    current_hhmm = now_dt.strftime("%H:%M")
+    events = []
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # One-time medicine reminders
+    cursor.execute("""
+        SELECT id, user_id, name, dosage, date, time
+        FROM medicine_reminders
+        WHERE LOWER(schedule) = 'once'
+          AND date = ?
+          AND time = ?
+    """, (today, current_hhmm))
+    for row in cursor.fetchall():
+        if notification_already_sent(cursor, row["user_id"], "medicine_once", row["id"], row["date"], row["time"]):
+            continue
+
+        speech = f"Medicine reminder. {row['name']}, {row['dosage']}."
+        events.append({
+            "user_id": row["user_id"],
+            "item_type": "medicine_once",
+            "item_id": row["id"],
+            "occurrence_date": row["date"],
+            "occurrence_time": row["time"],
+            "payload": {
+                "title": "Medicine Reminder",
+                "body": f"{row['name']} - {row['dosage']} at {row['time']}",
+                "icon": "/static/icons/icon-192.png",
+                "badge": "/static/icons/icon-192.png",
+                "tag": f"medicine-once-{row['id']}-{row['date']}",
+                "url": "/medicine-reminder",
+                "type": "medicine",
+                "speech": speech
+            }
+        })
+
+    # Daily medicine reminders (tracked by day so they can notify again tomorrow)
+    cursor.execute("""
+        SELECT id, user_id, name, dosage, date, end_date, time
+        FROM medicine_reminders
+        WHERE LOWER(schedule) = 'daily'
+          AND time = ?
+          AND date <= ?
+          AND (end_date IS NULL OR end_date >= ?)
+    """, (current_hhmm, today, today))
+    for row in cursor.fetchall():
+        if notification_already_sent(cursor, row["user_id"], "medicine_daily", row["id"], today, row["time"]):
+            continue
+
+        speech = f"Daily medicine reminder. {row['name']}, {row['dosage']}."
+        events.append({
+            "user_id": row["user_id"],
+            "item_type": "medicine_daily",
+            "item_id": row["id"],
+            "occurrence_date": today,
+            "occurrence_time": row["time"],
+            "payload": {
+                "title": "Daily Medicine Reminder",
+                "body": f"{row['name']} - {row['dosage']} at {row['time']}",
+                "icon": "/static/icons/icon-192.png",
+                "badge": "/static/icons/icon-192.png",
+                "tag": f"medicine-daily-{row['id']}-{today}",
+                "url": "/medicine-reminder",
+                "type": "medicine",
+                "speech": speech
+            }
+        })
+
+    # Appointments
+    cursor.execute("""
+        SELECT id, user_id, doctor, hospital, date, time
+        FROM appointments
+        WHERE date = ?
+          AND time = ?
+    """, (today, current_hhmm))
+    for row in cursor.fetchall():
+        if notification_already_sent(cursor, row["user_id"], "appointment", row["id"], row["date"], row["time"]):
+            continue
+
+        doctor_name = row["doctor"] or "Doctor"
+        speech = f"Appointment reminder. You have an appointment with {doctor_name} at {row['time']}."
+        events.append({
+            "user_id": row["user_id"],
+            "item_type": "appointment",
+            "item_id": row["id"],
+            "occurrence_date": row["date"],
+            "occurrence_time": row["time"],
+            "payload": {
+                "title": "Appointment Reminder",
+                "body": f"{doctor_name} at {row['hospital'] or 'Hospital'} - {row['time']}",
+                "icon": "/static/icons/icon-192.png",
+                "badge": "/static/icons/icon-192.png",
+                "tag": f"appointment-{row['id']}-{row['date']}",
+                "url": "/appointments",
+                "type": "appointment",
+                "speech": speech
+            }
+        })
+
+    conn.close()
+    return events
+
+
+def send_push_to_user(user_id, payload):
+    vapid = get_vapid_config()
+    if not PYWEBPUSH_AVAILABLE:
+        return False
+    if not vapid["private_key"] or not vapid["claims_sub"]:
+        return False
+
+    subscriptions = get_user_push_subscriptions(user_id)
+    if not subscriptions:
+        return False
+
+    success_count = 0
+    for sub in subscriptions:
+        try:
+            webpush(
+                subscription_info=sub,
+                data=json.dumps(payload),
+                vapid_private_key=vapid["private_key"],
+                vapid_claims={"sub": vapid["claims_sub"]}
+            )
+            success_count += 1
+        except WebPushException as exc:
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            if status_code in (404, 410):
+                delete_user_push_subscription(user_id, sub["endpoint"])
+        except Exception:
+            continue
+
+    return success_count > 0
+
+
+def process_due_push_notifications():
+    now_dt = datetime.now()
+    events = build_due_push_events(now_dt)
+    for event in events:
+        pushed = send_push_to_user(event["user_id"], event["payload"])
+        if pushed:
+            mark_notification_sent(
+                event["user_id"],
+                event["item_type"],
+                event["item_id"],
+                event["occurrence_date"],
+                event["occurrence_time"]
+            )
+
+
+def notification_scheduler_loop():
+    while True:
+        try:
+            process_due_push_notifications()
+        except Exception:
+            pass
+
+        now_dt = datetime.now()
+        sleep_seconds = 60 - now_dt.second
+        if sleep_seconds <= 0:
+            sleep_seconds = 60
+        time.sleep(sleep_seconds)
+
+
+def start_notification_scheduler():
+    global PUSH_SCHEDULER_STARTED
+    with PUSH_SCHEDULER_LOCK:
+        if PUSH_SCHEDULER_STARTED:
+            return
+
+        thread = threading.Thread(target=notification_scheduler_loop, daemon=True)
+        thread.start()
+        PUSH_SCHEDULER_STARTED = True
 
 
 # -----------------------------
@@ -1268,6 +1604,55 @@ def login():
     return render_template("login.html")
 
 
+@app.route("/forgot-password", methods=["GET", "POST"])
+def forgot_password():
+    if request.method == "POST":
+        full_name = request.form.get("full_name", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        new_password = request.form.get("new_password", "").strip()
+        confirm_password = request.form.get("confirm_password", "").strip()
+
+        if not full_name or not email or not new_password or not confirm_password:
+            flash("All fields are required.")
+            return redirect(url_for("forgot_password"))
+
+        if new_password != confirm_password:
+            flash("New password and confirm password do not match.")
+            return redirect(url_for("forgot_password"))
+
+        if len(new_password) < 6:
+            flash("Password must be at least 6 characters.")
+            return redirect(url_for("forgot_password"))
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id FROM users
+            WHERE email = ? AND LOWER(full_name) = LOWER(?)
+            """,
+            (email, full_name)
+        )
+        user = cursor.fetchone()
+
+        if not user:
+            conn.close()
+            flash("No account matched those details.")
+            return redirect(url_for("forgot_password"))
+
+        cursor.execute(
+            "UPDATE users SET password = ? WHERE id = ?",
+            (generate_password_hash(new_password), user["id"])
+        )
+        conn.commit()
+        conn.close()
+
+        flash("Password reset successful. Please login.")
+        return redirect(url_for("login"))
+
+    return render_template("forgot_password.html")
+
+
 @app.route("/logout")
 def logout():
     session.clear()
@@ -1484,6 +1869,10 @@ def medicine_reminder_page():
 def appointments_page():
     return render_template("appointments.html")
 
+@app.route("/settings")
+@login_required
+def settings_page():
+    return render_template("settings.html")
 
 @app.route("/nearby-pharmacy")
 @login_required
@@ -1547,6 +1936,7 @@ def add_medicine():
 @login_required
 def update_medicine():
     data = request.get_json()
+    reminder_id = int(data["id"])
 
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -1562,14 +1952,24 @@ def update_medicine():
         data.get("end_date"),
         data["time"],
         data["schedule"],
-        data["id"],
+        reminder_id,
         session["user_id"]
     ))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"status": "success"})
+    return jsonify({
+        "status": "success",
+        "id": reminder_id,
+        "user_id": session["user_id"],
+        "name": data["name"],
+        "dosage": data["dosage"],
+        "date": data["date"],
+        "end_date": data.get("end_date"),
+        "time": data["time"],
+        "schedule": data["schedule"]
+    })
 
 
 @app.route("/delete_medicine/<int:reminder_id>", methods=["DELETE"])
@@ -1583,7 +1983,7 @@ def delete_medicine(reminder_id):
     )
     conn.commit()
     conn.close()
-    return jsonify({"status": "deleted"})
+    return jsonify({"status": "deleted", "id": reminder_id})
 
 
 # -----------------------------
@@ -1679,8 +2079,47 @@ def api_nearby_hospital():
     return jsonify(results)
 
 
+# -----------------------------
+# PWA routes
+# -----------------------------
+@app.route("/api/push/vapid-public-key", methods=["GET"])
+@login_required
+def get_vapid_public_key():
+    vapid = get_vapid_config()
+    if not vapid["public_key"]:
+        return jsonify({"error": "VAPID public key is not configured"}), 500
+    return jsonify({"publicKey": vapid["public_key"]})
+
+
+@app.route("/api/push/subscribe", methods=["POST"])
+@login_required
+def save_push_subscription_route():
+    data = request.get_json(silent=True) or {}
+    try:
+        save_user_push_subscription(session["user_id"], data)
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    return jsonify({"status": "ok"})
+
+
+@app.route("/manifest.json")
+def manifest():
+    return app.send_static_file("manifest.json")
+
+
+@app.route("/service-worker.js")
+def service_worker():
+    response = app.send_static_file("service-worker.js")
+    response.headers["Service-Worker-Allowed"] = "/"
+    response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 if __name__ == "__main__":
+    debug_mode = True
     init_db()
     init_auth_tables()
     create_default_admin()
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    if (not debug_mode) or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        start_notification_scheduler()
+    app.run(host="0.0.0.0", port=5000, debug=debug_mode)

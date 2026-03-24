@@ -4,122 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Alerts</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
-            background-size: 300% 300%;
-            animation: gradientMove 10s ease infinite;
-            min-height: 100vh;
-            color: white;
-        }
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .overlay {
-            min-height: 100vh;
-            background: rgba(0,0,0,0.35);
-            padding: 30px 20px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
-        }
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .back-btn {
-            text-decoration: none;
-            background: #111827;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.15);
-            font-weight: bold;
-        }
-        .section {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .item {
-            padding: 12px 0;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .item:last-child {
-            border-bottom: none;
-        }
-        .empty {
-            color: #4ade80;
-            font-weight: bold;
-        }
-        .danger {
-            color: #f87171;
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_theme.css') }}">
 </head>
 <body>
-    <div class="overlay">
-        <div class="container">
-            <div class="topbar">
-                <div>
-                    <h1>Check Alerts</h1>
-                    <p>Expired reminders and missed appointments</p>
+    <div class="admin-overlay">
+        <div class="admin-container">
+            <div class="admin-topbar">
+                <div class="admin-title">
+                    <h1>Admin Alerts</h1>
+                    <p>Expired reminders and missed appointments overview.</p>
                 </div>
-                <a class="back-btn" href="/admin/dashboard">← Back to Dashboard</a>
+                <div class="admin-actions">
+                    <a class="admin-btn" href="/admin/dashboard">&#8592; Back to Dashboard</a>
+                </div>
             </div>
 
-            <div class="section">
-                <h2>Expired One-Time Reminders</h2>
-                {% if expired_once %}
-                    {% for rem in expired_once %}
-                    <div class="item">
-                        <span class="danger">{{ rem["name"] }}</span> — {{ rem["date"] }} at {{ rem["time"] }}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty">No expired one-time reminders.</div>
-                {% endif %}
-            </div>
+            <div class="list-stack">
+                <section class="list-section">
+                    <h2>Expired One-Time Reminders</h2>
+                    {% if expired_once %}
+                        {% for rem in expired_once %}
+                        <div class="list-item">
+                            <strong>{{ rem["name"] }}</strong>
+                            <span class="muted"> - {{ rem["date"] }} at {{ rem["time"] }} ({{ rem["user_name"] if rem["user_name"] else "Unknown user" }})</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">No expired one-time reminders.</div>
+                    {% endif %}
+                </section>
 
-            <div class="section">
-                <h2>Expired Daily Reminders</h2>
-                {% if expired_daily %}
-                    {% for rem in expired_daily %}
-                    <div class="item">
-                        <span class="danger">{{ rem["name"] }}</span> — ended on {{ rem["end_date"] }}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty">No expired daily reminders.</div>
-                {% endif %}
-            </div>
+                <section class="list-section">
+                    <h2>Expired Daily Reminders</h2>
+                    {% if expired_daily %}
+                        {% for rem in expired_daily %}
+                        <div class="list-item">
+                            <strong>{{ rem["name"] }}</strong>
+                            <span class="muted"> - ended on {{ rem["end_date"] }} ({{ rem["user_name"] if rem["user_name"] else "Unknown user" }})</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">No expired daily reminders.</div>
+                    {% endif %}
+                </section>
 
-            <div class="section">
-                <h2>Missed Today's Appointments</h2>
-                {% if missed_appointments %}
-                    {% for appt in missed_appointments %}
-                    <div class="item">
-                        <span class="danger">Dr. {{ appt["doctor"] }}</span> — {{ appt["date"] }} at {{ appt["time"] }} — {{ appt["hospital"] }}
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div class="empty">No missed appointments today.</div>
-                {% endif %}
+                <section class="list-section">
+                    <h2>Missed Today's Appointments</h2>
+                    {% if missed_appointments %}
+                        {% for appt in missed_appointments %}
+                        <div class="list-item">
+                            <strong>Dr. {{ appt["doctor"] }}</strong>
+                            <span class="muted"> - {{ appt["date"] }} at {{ appt["time"] }} ({{ appt["hospital"] }}) for {{ appt["user_name"] if appt["user_name"] else "Unknown user" }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">No missed appointments today.</div>
+                    {% endif %}
+                </section>
             </div>
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>

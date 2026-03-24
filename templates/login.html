@@ -4,116 +4,59 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Login</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
-            background-size: 300% 300%;
-            animation: gradientMove 10s ease infinite;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
-
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
-        .container {
-            width: 100%;
-            max-width: 380px;
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
-            backdrop-filter: blur(10px);
-            border-radius: 18px;
-            padding: 30px;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
-        }
-
-        h2 {
-            text-align: center;
-            margin-bottom: 22px;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.15);
-            background: rgba(255,255,255,0.08);
-            color: white;
-            outline: none;
-        }
-
-        input::placeholder {
-            color: #d1d5db;
-        }
-
-        button {
-            width: 100%;
-            padding: 12px;
-            margin-top: 10px;
-            background: #111827;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background: #1f2937;
-        }
-
-        .link {
-            text-align: center;
-            margin-top: 14px;
-        }
-
-        .link a {
-            color: #93c5fd;
-            text-decoration: none;
-        }
-
-        .flash {
-            text-align: center;
-            color: #fca5a5;
-            margin-bottom: 10px;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='auth_theme.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h2>User Login</h2>
+    <div class="auth-page">
+        <div class="auth-shell">
+            <div class="auth-grid">
+                <section class="brand-panel">
+                    <p class="brand-kicker">Healthcare Assistant</p>
+                    <h1>Welcome Back</h1>
+                    <p class="brand-text">Sign in to manage reminders, appointments, pharmacy search, and AI health support from one dashboard.</p>
+                    <ul class="brand-list">
+                        <li>Fast medicine reminders and appointment tracking</li>
+                        <li>Light and dark theme synced across all pages</li>
+                        <li>Responsive design for laptop, tablet, and mobile</li>
+                    </ul>
+                </section>
 
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            {% for message in messages %}
-              <div class="flash">{{ message }}</div>
-            {% endfor %}
-          {% endif %}
-        {% endwith %}
+                <section class="auth-card">
+                    <h2>User Login</h2>
+                    <p class="auth-subtitle">Use your registered email and password to continue.</p>
 
-        <form method="POST" action="/login">
-            <input type="email" name="email" placeholder="Enter email" required>
-            <input type="password" name="password" placeholder="Enter password" required>
-            <button type="submit">Login</button>
-        </form>
+                    {% with messages = get_flashed_messages() %}
+                      {% if messages %}
+                        <div class="flash-list">
+                        {% for message in messages %}
+                          <div class="flash">{{ message }}</div>
+                        {% endfor %}
+                        </div>
+                      {% endif %}
+                    {% endwith %}
 
-        <div class="link">
-            <p>Don't have an account? <a href="/register">Register</a></p>
-            <p><a href="/admin/login">Admin Login</a></p>
+                    <form method="POST" action="/login">
+                        <div class="form-group">
+                            <label for="email">Email</label>
+                            <input id="email" class="form-input" type="email" name="email" placeholder="Enter your email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="password">Password</label>
+                            <input id="password" class="form-input" type="password" name="password" placeholder="Enter your password" required>
+                        </div>
+                        <button class="primary-btn" type="submit">Login</button>
+                    </form>
+
+                    <div class="auth-links">
+                        <p><a href="/forgot-password">Forgot password?</a></p>
+                        <p>Do not have an account? <a href="/register">Register</a></p>
+                        <p><a href="/admin/login">Admin Login</a></p>
+                    </div>
+                </section>
+            </div>
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>

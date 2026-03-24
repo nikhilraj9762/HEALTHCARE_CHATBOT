@@ -4,81 +4,40 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Requests</title>
-    <style>
-        * { box-sizing: border-box; }
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
-            background-size: 300% 300%;
-            animation: gradientMove 10s ease infinite;
-            min-height: 100vh;
-            color: white;
-        }
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-        .overlay {
-            min-height: 100vh;
-            background: rgba(0,0,0,0.35);
-            padding: 30px 20px;
-        }
-        .container {
-            max-width: 1100px;
-            margin: auto;
-        }
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
-        }
-        .back-btn {
-            text-decoration: none;
-            background: #111827;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 12px;
-            border: 1px solid rgba(255,255,255,0.15);
-            font-weight: bold;
-        }
-        .card {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 18px;
-            padding: 20px;
-            margin-bottom: 18px;
-        }
-        .status {
-            color: #93c5fd;
-            font-weight: bold;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='admin_theme.css') }}">
 </head>
 <body>
-    <div class="overlay">
-        <div class="container">
-            <div class="topbar">
-                <div>
-                    <h1>View Requests</h1>
-                    <p>User support and request messages</p>
+    <div class="admin-overlay">
+        <div class="admin-container">
+            <div class="admin-topbar">
+                <div class="admin-title">
+                    <h1>Admin Requests</h1>
+                    <p>User support and request messages.</p>
                 </div>
-                <a class="back-btn" href="/admin/dashboard">← Back to Dashboard</a>
+                <div class="admin-actions">
+                    <a class="admin-btn" href="/admin/dashboard">&#8592; Back to Dashboard</a>
+                </div>
             </div>
 
-            {% for req in requests_list %}
-            <div class="card">
-                <h3>{{ req.name }}</h3>
-                <p><strong>Request Type:</strong> {{ req.type }}</p>
-                <p><strong>Message:</strong> {{ req.message }}</p>
-                <p><strong>Status:</strong> <span class="status">{{ req.status }}</span></p>
+            <div class="list-stack">
+                {% if requests_list %}
+                    {% for req in requests_list %}
+                    <section class="list-section">
+                        <h2>{{ req.name }}</h2>
+                        <div class="list-item"><strong>Request Type:</strong> {{ req.type }}</div>
+                        <div class="list-item"><strong>Message:</strong> {{ req.message }}</div>
+                        <div class="list-item"><strong>Status:</strong> {{ req.status }}</div>
+                    </section>
+                    {% endfor %}
+                {% else %}
+                    <section class="list-section">
+                        <div class="empty-state">No requests found.</div>
+                    </section>
+                {% endif %}
             </div>
-            {% endfor %}
         </div>
     </div>
+
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>

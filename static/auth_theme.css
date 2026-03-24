@@ -1,0 +1,299 @@
+:root {
+    --bg-1: #0b1220;
+    --bg-2: #172036;
+    --text-main: #f8fafc;
+    --text-muted: #cbd5e1;
+    --panel: rgba(15, 23, 42, 0.72);
+    --panel-border: rgba(148, 163, 184, 0.22);
+    --card: rgba(15, 23, 42, 0.62);
+    --brand-1: #22d3ee;
+    --brand-2: #14b8a6;
+    --brand-3: #38bdf8;
+    --danger: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+}
+
+body {
+    font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+    color: var(--text-main);
+    min-height: 100vh;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    background:
+        radial-gradient(900px 380px at 8% -10%, rgba(20, 184, 166, 0.18), transparent 65%),
+        radial-gradient(900px 420px at 100% 0%, rgba(56, 189, 248, 0.14), transparent 65%),
+        linear-gradient(130deg, var(--bg-1), var(--bg-2));
+    background-size: 140% 140%;
+    animation: authBgMove 16s ease infinite;
+    transition: background 0.3s ease, color 0.3s ease;
+}
+
+@keyframes authBgMove {
+    0% { background-position: 0% 45%; }
+    50% { background-position: 100% 55%; }
+    100% { background-position: 0% 45%; }
+}
+
+.auth-page {
+    min-height: 100vh;
+    padding: 36px 18px 44px;
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.38));
+}
+
+.auth-shell {
+    width: min(97vw, 1600px);
+    margin: 0 auto;
+}
+
+.auth-grid {
+    display: grid;
+    grid-template-columns: 1.12fr 0.88fr;
+    gap: 24px;
+    align-items: stretch;
+}
+
+.brand-panel,
+.auth-card {
+    border: 1px solid var(--panel-border);
+    border-radius: 24px;
+    background: var(--panel);
+    box-shadow: 0 14px 34px rgba(2, 8, 23, 0.35);
+    backdrop-filter: blur(10px);
+}
+
+.brand-panel {
+    padding: 34px;
+}
+
+.brand-kicker {
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1.1px;
+    color: #7dd3fc;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.brand-panel h1 {
+    margin: 10px 0 10px;
+    font-size: clamp(2rem, 2.8vw, 3rem);
+    line-height: 1.2;
+}
+
+.brand-text {
+    margin: 0 0 18px;
+    color: var(--text-muted);
+    font-size: 1.06rem;
+}
+
+.brand-list {
+    margin: 0;
+    padding-left: 18px;
+    color: var(--text-muted);
+}
+
+.brand-list li {
+    margin-bottom: 10px;
+    font-size: 1.02rem;
+}
+
+.auth-card {
+    padding: 30px;
+    align-self: center;
+}
+
+.auth-card h2 {
+    margin: 0;
+    font-size: clamp(1.7rem, 2vw, 2.2rem);
+}
+
+.auth-subtitle {
+    margin: 8px 0 20px;
+    color: var(--text-muted);
+    font-size: 0.98rem;
+}
+
+.flash-list {
+    margin-bottom: 12px;
+}
+
+.flash {
+    margin-bottom: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    background: rgba(127, 29, 29, 0.35);
+    color: #fecaca;
+    font-size: 0.95rem;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.form-input {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    background: rgba(15, 23, 42, 0.72);
+    color: var(--text-main);
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-input::placeholder {
+    color: #94a3b8;
+}
+
+.form-input:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.14);
+}
+
+.primary-btn,
+.secondary-btn {
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary-btn {
+    background: linear-gradient(135deg, var(--brand-1), var(--brand-2), var(--brand-3));
+    background-size: 220% 220%;
+    animation: authBtnFlow 5s ease infinite;
+    box-shadow: 0 10px 22px rgba(20, 184, 166, 0.32);
+}
+
+.secondary-btn {
+    background: rgba(15, 23, 42, 0.9);
+    border-color: rgba(148, 163, 184, 0.4);
+}
+
+.primary-btn:hover,
+.secondary-btn:hover {
+    transform: translateY(-1px);
+}
+
+.auth-links {
+    margin-top: 14px;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+}
+
+.auth-links p {
+    margin: 6px 0;
+}
+
+.auth-links a {
+    color: #7dd3fc;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-links a:hover {
+    text-decoration: underline;
+}
+
+@keyframes authBtnFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+body.light-mode {
+    --text-main: #0f172a;
+    --text-muted: #475569;
+    --panel: rgba(255, 255, 255, 0.9);
+    --panel-border: rgba(148, 163, 184, 0.35);
+    --card: rgba(255, 255, 255, 0.95);
+    background:
+        radial-gradient(900px 420px at 8% -10%, rgba(59, 130, 246, 0.18), transparent 65%),
+        radial-gradient(900px 420px at 100% 0%, rgba(20, 184, 166, 0.16), transparent 65%),
+        linear-gradient(130deg, #eaf2ff, #f8fbff);
+}
+
+body.light-mode .auth-page {
+    background: rgba(255, 255, 255, 0.46);
+}
+
+body.light-mode .flash {
+    border-color: rgba(239, 68, 68, 0.3);
+    background: rgba(254, 226, 226, 0.9);
+    color: #991b1b;
+}
+
+body.light-mode .form-input {
+    background: #ffffff;
+    border-color: rgba(148, 163, 184, 0.38);
+    color: #0f172a;
+}
+
+body.light-mode .secondary-btn {
+    background: #e2e8f0;
+    border-color: rgba(148, 163, 184, 0.42);
+    color: #0f172a;
+}
+
+body.light-mode .auth-links a {
+    color: #0369a1;
+}
+
+*:focus-visible {
+    outline: 2px solid #38bdf8;
+    outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+    .auth-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .brand-panel {
+        padding: 26px;
+    }
+
+    .auth-card {
+        padding: 24px;
+    }
+}
+
+@media (max-width: 768px) {
+    .auth-page {
+        padding: 20px 12px 30px;
+    }
+
+    .brand-panel h1 {
+        font-size: 1.9rem;
+    }
+
+    .brand-list li {
+        font-size: 0.96rem;
+    }
+}

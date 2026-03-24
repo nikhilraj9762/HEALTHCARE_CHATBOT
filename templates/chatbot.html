@@ -12,12 +12,15 @@
 
         body {
             margin: 0;
-            font-family: Arial, sans-serif;
+            font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
             background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
             background-size: 300% 300%;
             animation: gradientMove 10s ease infinite;
             min-height: 100vh;
             color: white;
+            line-height: 1.6;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
         }
 
         @keyframes gradientMove {
@@ -29,33 +32,33 @@
         .chatbot-page-wrapper {
             min-height: 100vh;
             background: rgba(0, 0, 0, 0.30);
-            padding: 30px 20px;
+            padding: 34px 18px 44px;
         }
 
         .chatbot-page-container {
             width: 100%;
-            max-width: 1400px;
+            max-width: 1700px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255,255,255,0.10);
             border-radius: 24px;
             backdrop-filter: blur(10px);
             box-shadow: 0 12px 40px rgba(0,0,0,0.30);
-            padding: 24px;
+            padding: 28px;
         }
 
         .chatbot-topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
+            gap: 22px;
             flex-wrap: wrap;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .chatbot-topbar h2 {
             margin: 0;
-            font-size: 38px;
+            font-size: clamp(1.85rem, 2.5vw, 2.55rem);
             font-weight: bold;
             color: white;
             flex: 1;
@@ -64,7 +67,7 @@
 
         .back-btn {
             display: inline-block;
-            padding: 12px 18px;
+            padding: 13px 20px;
             border-radius: 12px;
             background: #111827;
             color: white;
@@ -72,6 +75,7 @@
             border: 1px solid rgba(255,255,255,0.15);
             transition: 0.3s;
             white-space: nowrap;
+            font-size: 16px;
         }
 
         .back-btn:hover {
@@ -92,28 +96,28 @@
         }
 
         .voice-label {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 600;
         }
 
         .chat-box {
-            height: 62vh;
-            min-height: 480px;
-            max-height: 70vh;
+            height: 65vh;
+            min-height: 560px;
+            max-height: 72vh;
             overflow-y: auto;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255,255,255,0.10);
             border-radius: 20px;
-            padding: 20px;
+            padding: 24px;
             margin-bottom: 20px;
         }
 
         .message {
-            max-width: 75%;
-            padding: 16px 18px;
-            margin-bottom: 14px;
+            max-width: 78%;
+            padding: 17px 20px;
+            margin-bottom: 16px;
             border-radius: 18px;
-            line-height: 1.6;
+            line-height: 1.66;
             font-size: 17px;
             word-wrap: break-word;
         }
@@ -140,12 +144,12 @@
         #userInput {
             flex: 1;
             min-width: 260px;
-            padding: 16px 18px;
+            padding: 17px 18px;
             border-radius: 14px;
             border: 1px solid rgba(255,255,255,0.12);
             background: rgba(255,255,255,0.08);
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             outline: none;
         }
 
@@ -162,8 +166,8 @@
         }
 
         .mic-btn {
-            width: 58px;
-            height: 58px;
+            width: 60px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -182,10 +186,10 @@
         }
 
         #sendBtn {
-            padding: 16px 24px;
+            padding: 17px 26px;
             background: #14b8a6;
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: 600;
         }
 
@@ -197,7 +201,7 @@
             margin-top: 18px;
             text-align: center;
             color: #cbd5e1;
-            font-size: 15px;
+            font-size: 16px;
         }
 
         .switch {
@@ -243,6 +247,14 @@
         }
 
         @media (max-width: 768px) {
+            .chatbot-page-wrapper {
+                padding: 20px 12px 30px;
+            }
+
+            .chatbot-page-container {
+                padding: 18px;
+            }
+
             .chatbot-topbar {
                 flex-direction: column;
                 align-items: stretch;
@@ -250,7 +262,7 @@
 
             .chatbot-topbar h2 {
                 text-align: center;
-                font-size: 28px;
+                font-size: 1.6rem;
             }
 
             .voice-controls {
@@ -264,6 +276,8 @@
 
             .message {
                 max-width: 90%;
+                font-size: 15px;
+                line-height: 1.6;
             }
 
             .chat-input-container {
@@ -350,7 +364,7 @@ body.light-mode .voice-toggle-box {
         <div class="chatbot-page-container">
 
             <div class="chatbot-topbar">
-                <a href="/dashboard" class="back-btn">← Back</a>
+                <a href="/dashboard" class="back-btn">&#8592; Back</a>
                 <h2>AI Healthcare Chatbot</h2>
                 <div style="width: 92px;"></div>
             </div>
@@ -396,3 +410,4 @@ body.light-mode .voice-toggle-box {
 <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>
+

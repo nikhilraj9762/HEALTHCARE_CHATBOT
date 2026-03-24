@@ -5,237 +5,529 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Dashboard</title>
     <style>
+        :root {
+            --bg-1: #0b1220;
+            --bg-2: #111b2e;
+            --text-main: #f8fafc;
+            --text-muted: #cbd5e1;
+            --panel: rgba(15, 23, 42, 0.72);
+            --panel-border: rgba(148, 163, 184, 0.22);
+            --card: rgba(15, 23, 42, 0.58);
+            --card-hover: rgba(30, 41, 59, 0.74);
+            --brand-1: #22d3ee;
+            --brand-2: #14b8a6;
+            --brand-3: #38bdf8;
+            --danger: #ef4444;
+        }
+
         * {
             box-sizing: border-box;
         }
 
-        html, body {
+        html,
+        body {
             margin: 0;
             padding: 0;
             min-height: 100%;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
-            background-size: 300% 300%;
-            animation: gradientMove 10s ease infinite;
+            font-family: "Segoe UI Variable", "Segoe UI", "Trebuchet MS", sans-serif;
+            color: var(--text-main);
             min-height: 100vh;
-            color: white;
-            transition: background 0.35s ease, color 0.35s ease;
+            line-height: 1.6;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            background:
+                radial-gradient(900px 380px at 8% -10%, rgba(20, 184, 166, 0.18), transparent 65%),
+                radial-gradient(900px 420px at 100% 0%, rgba(56, 189, 248, 0.14), transparent 65%),
+                linear-gradient(130deg, var(--bg-1), var(--bg-2));
+            background-size: 140% 140%;
+            animation: bgMove 16s ease infinite;
+            transition: background 0.3s ease, color 0.3s ease;
         }
 
-        @keyframes gradientMove {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+        @keyframes bgMove {
+            0% { background-position: 0% 45%; }
+            50% { background-position: 100% 55%; }
+            100% { background-position: 0% 45%; }
         }
 
         .overlay {
             min-height: 100vh;
-            background: rgba(0, 0, 0, 0.35);
-            padding: 40px 20px;
-            transition: background 0.35s ease;
+            padding: 36px 18px 44px;
+            background: linear-gradient(180deg, rgba(2, 6, 23, 0.2), rgba(2, 6, 23, 0.38));
+            transition: background 0.3s ease;
         }
 
         .container {
-            max-width: 1250px;
-            margin: auto;
+            width: min(97vw, 1700px);
+            margin: 0 auto;
         }
 
         .topbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 15px;
+            gap: 18px;
             flex-wrap: wrap;
-            margin-bottom: 30px;
+            margin-bottom: 28px;
+            padding: 20px 24px;
+            border-radius: 18px;
+            border: 1px solid var(--panel-border);
+            background: var(--panel);
+            box-shadow: 0 14px 34px rgba(2, 8, 23, 0.35);
+            backdrop-filter: blur(10px);
+            animation: riseIn 0.45s ease;
         }
 
         .title h1 {
             margin: 0;
-            font-size: 32px;
+            font-size: clamp(1.85rem, 2.5vw, 2.55rem);
+            font-weight: 700;
+            letter-spacing: 0.2px;
         }
 
         .title p {
             margin: 8px 0 0;
-            color: #d1d5db;
-            font-size: 18px;
+            color: var(--text-muted);
+            font-size: 1.14rem;
         }
 
         .top-right-buttons {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
         }
 
-        .logout-btn {
-            text-decoration: none;
-            background: #111827;
-            color: white;
-            padding: 12px 18px;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.15);
-            transition: 0.3s;
-        }
-
-        .logout-btn:hover {
-            background: #1f2937;
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 22px;
-        }
-
-        .card {
-            text-decoration: none;
-            color: white;
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255,255,255,0.12);
-            border-radius: 18px;
-            padding: 28px 24px;
-            backdrop-filter: blur(8px);
-            transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-            min-height: 220px;
-            display: flex;
-            flex-direction: column;
-            justify-content: flex-start;
-        }
-
-        .card:hover {
-            transform: translateY(-6px);
-            background: rgba(255, 255, 255, 0.14);
-        }
-
-        .icon {
-            font-size: 52px;
-            margin-bottom: 18px;
-        }
-
-        .card h3 {
-            margin: 0 0 12px 0;
-            font-size: 20px;
-        }
-
-        .card p {
-            margin: 0;
-            color: #d1d5db;
-            line-height: 1.6;
+        .animated-theme-btn,
+        .settings-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            border-radius: 12px;
+            padding: 11px 16px;
             font-size: 15px;
+            font-weight: 700;
+            color: #ffffff;
+            cursor: pointer;
+            transition: transform 0.22s ease, box-shadow 0.22s ease;
+            background-size: 220% 220%;
+            animation: btnFlow 5s ease infinite;
         }
 
         .animated-theme-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            padding: 12px 18px;
-            border: none;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #22d3ee, #14b8a6, #38bdf8);
-            background-size: 200% 200%;
-            color: white;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: transform 0.25s ease, box-shadow 0.25s ease;
-            animation: themeButtonFlow 4s ease infinite;
-            box-shadow: 0 8px 20px rgba(20, 184, 166, 0.35);
+            background: linear-gradient(135deg, var(--brand-1), var(--brand-2), var(--brand-3));
+            box-shadow: 0 10px 22px rgba(20, 184, 166, 0.32);
         }
 
-        .animated-theme-btn:hover {
-            transform: translateY(-2px) scale(1.03);
-            box-shadow: 0 12px 26px rgba(20, 184, 166, 0.45);
+        .settings-btn {
+            background: linear-gradient(135deg, #0ea5a1, #0f766e, #0891b2);
+            box-shadow: 0 10px 22px rgba(8, 145, 178, 0.3);
         }
 
-        .animated-theme-btn:active {
+        .animated-theme-btn:hover,
+        .settings-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .animated-theme-btn:active,
+        .settings-btn:active {
             transform: scale(0.98);
         }
 
-        .theme-icon {
+        .theme-icon,
+        .settings-btn-icon {
             display: inline-block;
-            font-size: 18px;
-            animation: themeIconSpin 3s linear infinite;
+            font-size: 15px;
+            animation: spinSlow 4s linear infinite;
         }
 
-        .theme-text {
-            white-space: nowrap;
-            color: white;
+        .settings-btn-icon {
+            animation-duration: 3.1s;
         }
 
-        @keyframes themeButtonFlow {
+        @keyframes btnFlow {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
 
-        @keyframes themeIconSpin {
+        @keyframes spinSlow {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* LIGHT MODE */
+        .settings-menu {
+            position: relative;
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: min(92vw, 430px);
+            min-width: 380px;
+            padding: 18px;
+            border-radius: 14px;
+            border: 1px solid rgba(148, 163, 184, 0.28);
+            background: rgba(15, 23, 42, 0.95);
+            box-shadow: 0 16px 32px rgba(2, 8, 23, 0.45);
+            backdrop-filter: blur(10px);
+            z-index: 40;
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .settings-dropdown.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+
+        .settings-header {
+            margin: 0 0 10px;
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #93c5fd;
+            font-weight: 700;
+        }
+
+        .settings-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 0;
+        }
+
+        .settings-label strong {
+            font-size: 16px;
+        }
+
+        .settings-label small {
+            display: block;
+            margin-top: 3px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 56px;
+            height: 32px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            border-radius: 999px;
+            background: #475569;
+            border: 1px solid rgba(148, 163, 184, 0.32);
+            transition: 0.24s;
+        }
+
+        .slider::before {
+            content: "";
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            left: 3px;
+            top: 3px;
+            border-radius: 50%;
+            background: #ffffff;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            transition: 0.24s;
+        }
+
+        .switch input:checked + .slider {
+            background: linear-gradient(135deg, #0ea5a1, #22d3ee);
+        }
+
+        .switch input:checked + .slider::before {
+            transform: translateX(24px);
+        }
+
+        .toggle-state {
+            margin-top: 6px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .toggle-state.on {
+            color: #67e8f9;
+            font-weight: 600;
+        }
+
+        .settings-divider {
+            height: 1px;
+            background: rgba(148, 163, 184, 0.26);
+            margin: 12px 0 8px;
+        }
+
+        .settings-item {
+            display: block;
+            width: 100%;
+            border: none;
+            border-radius: 9px;
+            text-decoration: none;
+            text-align: left;
+            font-size: 15px;
+            line-height: 1.5;
+            background: transparent;
+            color: #e2e8f0;
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.18s ease, transform 0.18s ease;
+        }
+
+        .settings-item:hover {
+            background: rgba(148, 163, 184, 0.16);
+            transform: translateX(2px);
+        }
+
+        .logout-item {
+            color: #fecaca;
+        }
+
+        .logout-item:hover {
+            background: rgba(127, 29, 29, 0.38);
+            color: #ffffff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
+        }
+
+        .card {
+            text-decoration: none;
+            color: var(--text-main);
+            background: var(--card);
+            border: 1px solid rgba(148, 163, 184, 0.22);
+            border-radius: 18px;
+            padding: 26px 24px;
+            min-height: 260px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            box-shadow: 0 10px 26px rgba(2, 8, 23, 0.28);
+            transition: transform 0.24s ease, background 0.24s ease, box-shadow 0.24s ease, border-color 0.24s ease;
+            animation: riseIn 0.45s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            background: var(--card-hover);
+            border-color: rgba(56, 189, 248, 0.45);
+            box-shadow: 0 14px 30px rgba(2, 8, 23, 0.34);
+        }
+
+        .icon-shell {
+            width: 58px;
+            height: 58px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            background: linear-gradient(140deg, rgba(20, 184, 166, 0.24), rgba(56, 189, 248, 0.2));
+        }
+
+        .icon {
+            font-size: 30px;
+            line-height: 1;
+        }
+
+        .card h3 {
+            margin: 0 0 10px;
+            font-size: 23px;
+            font-weight: 700;
+        }
+
+        .card p {
+            margin: 0;
+            color: var(--text-muted);
+            line-height: 1.68;
+            font-size: 17px;
+        }
+
+        @keyframes riseIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         body.light-mode {
-            background: linear-gradient(135deg, #f8fafc, #e2e8f0, #ffffff);
-            background-size: 300% 300%;
-            color: #111827;
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --panel: rgba(255, 255, 255, 0.86);
+            --panel-border: rgba(148, 163, 184, 0.3);
+            --card: rgba(255, 255, 255, 0.92);
+            --card-hover: rgba(255, 255, 255, 0.98);
+            background:
+                radial-gradient(900px 420px at 8% -10%, rgba(59, 130, 246, 0.18), transparent 65%),
+                radial-gradient(900px 420px at 100% 0%, rgba(20, 184, 166, 0.16), transparent 65%),
+                linear-gradient(130deg, #eaf2ff, #f8fbff);
         }
 
         body.light-mode .overlay {
-            background: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.46);
         }
 
-        body.light-mode .title h1,
-        body.light-mode .title p {
-            color: #111827;
+        body.light-mode .settings-btn {
+            background: linear-gradient(135deg, #2563eb, #38bdf8, #60a5fa);
+            box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+        }
+
+        body.light-mode .settings-dropdown {
+            background: rgba(255, 255, 255, 0.98);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            box-shadow: 0 14px 28px rgba(15, 23, 42, 0.18);
+        }
+
+        body.light-mode .settings-header {
+            color: #0c4a6e;
+        }
+
+        body.light-mode .settings-label small,
+        body.light-mode .toggle-state {
+            color: #64748b;
+        }
+
+        body.light-mode .toggle-state.on {
+            color: #0ea5a1;
+        }
+
+        body.light-mode .slider {
+            background: #cbd5e1;
+            border-color: rgba(148, 163, 184, 0.45);
+        }
+
+        body.light-mode .switch input:checked + .slider {
+            background: linear-gradient(135deg, #2563eb, #38bdf8);
+        }
+
+        body.light-mode .settings-divider {
+            background: rgba(148, 163, 184, 0.35);
+        }
+
+        body.light-mode .settings-item {
+            color: #0f172a;
+        }
+
+        body.light-mode .settings-item:hover {
+            background: rgba(148, 163, 184, 0.2);
+        }
+
+        body.light-mode .logout-item {
+            color: #b91c1c;
         }
 
         body.light-mode .card {
-            background: rgba(255, 255, 255, 0.9);
-            border: 1px solid rgba(15, 23, 42, 0.08);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
-            color: #111827;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
         }
 
         body.light-mode .card:hover {
-            background: rgba(255, 255, 255, 1);
+            border-color: rgba(59, 130, 246, 0.35);
+            box-shadow: 0 13px 30px rgba(15, 23, 42, 0.16);
         }
 
-        body.light-mode .card h3,
-        body.light-mode .card p {
-            color: #111827;
+        *:focus-visible {
+            outline: 2px solid #38bdf8;
+            outline-offset: 2px;
         }
 
-        body.light-mode .logout-btn {
-            background: #dc2626;
-            color: white;
-            border: none;
-        }
+        @media (max-width: 1400px) {
+            .container {
+                width: min(97vw, 1420px);
+            }
 
-        body.light-mode .logout-btn:hover {
-            background: #b91c1c;
-        }
+            .grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
 
-        body.light-mode .animated-theme-btn {
-            background: linear-gradient(135deg, #2563eb, #38bdf8, #60a5fa);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+            .card h3 {
+                font-size: 21px;
+            }
         }
 
         @media (max-width: 768px) {
+            .overlay {
+                padding: 22px 12px 30px;
+            }
+
             .topbar {
                 flex-direction: column;
                 align-items: flex-start;
+                padding: 16px;
+                margin-bottom: 20px;
             }
 
             .title h1 {
-                font-size: 28px;
+                font-size: 1.55rem;
             }
 
             .top-right-buttons {
                 width: 100%;
+            }
+
+            .animated-theme-btn,
+            .settings-btn {
+                flex: 1;
+                justify-content: center;
+            }
+
+            .settings-menu {
+                width: 100%;
+            }
+
+            .settings-dropdown {
+                left: 0;
+                right: auto;
+                width: 100%;
+                min-width: 100%;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .card {
+                min-height: 210px;
+                padding: 20px 18px;
+            }
+
+            .card h3 {
+                font-size: 20px;
+            }
+
+            .card p {
+                font-size: 15px;
+                line-height: 1.6;
             }
         }
     </style>
@@ -251,40 +543,62 @@
 
                 <div class="top-right-buttons">
                     <button id="themeToggleBtn" class="animated-theme-btn" type="button">
-                        <span class="theme-icon">☀</span>
+                        <span class="theme-icon">&#9728;</span>
                         <span class="theme-text">Light Mode</span>
                     </button>
-                    <a href="/logout" class="logout-btn">Logout</a>
+
+                    <div class="settings-menu">
+                        <button id="settingsBtn" class="settings-btn" type="button" aria-expanded="false">
+                            <span class="settings-btn-icon">&#9881;</span>
+                            <span>Settings</span>
+                        </button>
+                        <div id="settingsDropdown" class="settings-dropdown" aria-hidden="true">
+                            <p class="settings-header">Quick Settings</p>
+                            <div class="settings-row">
+                                <div class="settings-label">
+                                    <strong>Notifications</strong>
+                                    <small>Medicine reminders and alerts</small>
+                                </div>
+                                <label class="switch">
+                                    <input id="notificationsToggle" type="checkbox">
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div id="notificationStateText" class="toggle-state">Off</div>
+                            <div class="settings-divider"></div>
+                            <a href="/logout" class="settings-item logout-item">Logout</a>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div class="grid">
                 <a class="card" href="/chatbot">
-                    <div class="icon">🤖</div>
+                    <div class="icon-shell"><div class="icon">&#129302;</div></div>
                     <h3>Chatbot</h3>
                     <p>Talk to your healthcare assistant for symptoms, reminders, and general health questions.</p>
                 </a>
 
                 <a class="card" href="/medicine-reminder">
-                    <div class="icon">⏰</div>
+                    <div class="icon-shell"><div class="icon">&#9200;</div></div>
                     <h3>Medicine Reminders</h3>
                     <p>Add, edit, and manage medicine reminders from your saved local data.</p>
                 </a>
 
                 <a class="card" href="/appointments">
-                    <div class="icon">📅</div>
+                    <div class="icon-shell"><div class="icon">&#128197;</div></div>
                     <h3>Appointments</h3>
                     <p>View and manage doctor appointments without disturbing existing features.</p>
                 </a>
 
                 <a class="card" href="/nearby-pharmacy">
-                    <div class="icon">🏥</div>
+                    <div class="icon-shell"><div class="icon">&#127973;</div></div>
                     <h3>Nearby Pharmacy</h3>
                     <p>Search pharmacies near you using browser location and your current API logic.</p>
                 </a>
 
                 <a class="card" href="/nearby-hospital">
-                    <div class="icon">🚑</div>
+                    <div class="icon-shell"><div class="icon">&#128657;</div></div>
                     <h3>Nearby Hospitals</h3>
                     <p>Find hospitals near your location using your current nearby search feature.</p>
                 </a>
@@ -293,5 +607,85 @@
     </div>
 
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
+    <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("/service-worker.js?v=6").catch(() => {});
+        }
+
+        const settingsBtn = document.getElementById("settingsBtn");
+        const settingsDropdown = document.getElementById("settingsDropdown");
+        const notificationsToggle = document.getElementById("notificationsToggle");
+        const notificationStateText = document.getElementById("notificationStateText");
+        const NOTIFICATION_PREF_KEY = "dashboard_notifications_enabled";
+
+        function setNotificationStateUI(isOn) {
+            notificationsToggle.checked = isOn;
+            notificationStateText.textContent = isOn ? "On" : "Off";
+            notificationStateText.classList.toggle("on", isOn);
+        }
+
+        function openDropdown() {
+            settingsDropdown.classList.add("show");
+            settingsDropdown.setAttribute("aria-hidden", "false");
+            settingsBtn.setAttribute("aria-expanded", "true");
+        }
+
+        function closeDropdown() {
+            settingsDropdown.classList.remove("show");
+            settingsDropdown.setAttribute("aria-hidden", "true");
+            settingsBtn.setAttribute("aria-expanded", "false");
+        }
+
+        const savedNotificationPref = localStorage.getItem(NOTIFICATION_PREF_KEY) === "true";
+        setNotificationStateUI(savedNotificationPref);
+
+        settingsBtn.addEventListener("click", () => {
+            if (settingsDropdown.classList.contains("show")) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        });
+
+        document.addEventListener("click", (event) => {
+            if (!event.target.closest(".settings-menu")) {
+                closeDropdown();
+            }
+        });
+
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape") {
+                closeDropdown();
+            }
+        });
+
+        notificationsToggle.addEventListener("change", async () => {
+            if (notificationsToggle.checked) {
+                if (!("Notification" in window)) {
+                    alert("This browser does not support notifications.");
+                    setNotificationStateUI(false);
+                    localStorage.setItem(NOTIFICATION_PREF_KEY, "false");
+                    return;
+                }
+
+                let permission = Notification.permission;
+                if (permission !== "granted") {
+                    permission = await Notification.requestPermission();
+                }
+
+                if (permission === "granted") {
+                    localStorage.setItem(NOTIFICATION_PREF_KEY, "true");
+                    setNotificationStateUI(true);
+                } else {
+                    alert("Notification permission was not granted.");
+                    localStorage.setItem(NOTIFICATION_PREF_KEY, "false");
+                    setNotificationStateUI(false);
+                }
+            } else {
+                localStorage.setItem(NOTIFICATION_PREF_KEY, "false");
+                setNotificationStateUI(false);
+            }
+        });
+    </script>
 </body>
 </html>

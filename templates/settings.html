@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#14b8a6">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    html, body {
+        margin: 0;
+        padding: 0;
+        min-height: 100%;
+    }
+
+    body {
+        font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
+        background-size: 300% 300%;
+        animation: gradientMove 10s ease infinite;
+        min-height: 100vh;
+        color: white;
+        line-height: 1.6;
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+        transition: background 0.35s ease, color 0.35s ease;
+    }
+
+    @keyframes gradientMove {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+
+    .settings-page-wrapper {
+        min-height: 100vh;
+        background: rgba(0, 0, 0, 0.30);
+        padding: 34px 18px 44px;
+        transition: background 0.35s ease;
+    }
+
+    .settings-page-container {
+        width: 100%;
+        max-width: 1500px;
+        margin: 0 auto;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 24px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 12px 40px rgba(0,0,0,0.30);
+        padding: 28px;
+        transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .settings-topbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 22px;
+        flex-wrap: wrap;
+        margin-bottom: 28px;
+    }
+
+    .settings-topbar h2 {
+        margin: 0;
+        font-size: clamp(1.85rem, 2.5vw, 2.55rem);
+        font-weight: bold;
+        color: white;
+        flex: 1;
+        text-align: center;
+    }
+
+    .back-btn {
+        display: inline-block;
+        padding: 13px 20px;
+        border-radius: 12px;
+        background: #111827;
+        color: white;
+        text-decoration: none;
+        border: 1px solid rgba(255,255,255,0.15);
+        transition: 0.3s;
+        white-space: nowrap;
+        font-size: 16px;
+    }
+
+    .back-btn:hover {
+        background: #1f2937;
+    }
+
+    .settings-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 24px;
+    }
+
+    .settings-card {
+        background: rgba(255, 255, 255, 0.08);
+        border: 1px solid rgba(255,255,255,0.10);
+        border-radius: 22px;
+        padding: 28px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.20);
+        transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
+    }
+
+    .settings-card h3 {
+        margin: 0 0 14px 0;
+        font-size: 26px;
+        color: white;
+    }
+
+    .settings-card p {
+        margin: 0 0 20px 0;
+        font-size: 17px;
+        color: #dbe4ee;
+        line-height: 1.66;
+    }
+
+    .settings-btn,
+    .logout-btn,
+    .install-btn {
+        display: inline-block;
+        padding: 15px 24px;
+        border: none;
+        border-radius: 14px;
+        color: white;
+        font-size: 17px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: 0.3s;
+        margin-right: 10px;
+        margin-bottom: 10px;
+    }
+
+    .settings-btn {
+        background: #2563eb;
+    }
+
+    .settings-btn:hover {
+        background: #1d4ed8;
+    }
+
+    .logout-btn {
+        background: #ef4444;
+    }
+
+    .logout-btn:hover {
+        background: #dc2626;
+    }
+
+    .install-btn {
+        background: #7c3aed;
+        display: none;
+    }
+
+    .install-btn:hover {
+        background: #6d28d9;
+    }
+
+    .status-text {
+        margin-top: 12px;
+        font-size: 17px;
+        font-weight: 600;
+        color: #22c55e;
+    }
+
+    .status-text.denied {
+        color: #ef4444;
+    }
+
+    .status-text.default {
+        color: #facc15;
+    }
+
+    body.light-mode {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0, #ffffff);
+        background-size: 300% 300%;
+        color: #111827;
+    }
+
+    body.light-mode .settings-page-wrapper {
+        background: rgba(255, 255, 255, 0.40);
+    }
+
+    body.light-mode .settings-page-container {
+        background: rgba(255, 255, 255, 0.88);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 12px 40px rgba(15, 23, 42, 0.10);
+    }
+
+    body.light-mode .settings-topbar h2,
+    body.light-mode .settings-card h3,
+    body.light-mode .settings-card p {
+        color: #111827;
+    }
+
+    body.light-mode .back-btn {
+        background: #e2e8f0;
+        color: #111827;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+    }
+
+    body.light-mode .back-btn:hover {
+        background: #cbd5e1;
+    }
+
+    body.light-mode .settings-card {
+        background: rgba(255, 255, 255, 0.94);
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
+    }
+
+    @media (max-width: 1100px) {
+        .settings-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .settings-page-wrapper {
+            padding: 20px 12px 30px;
+        }
+
+        .settings-page-container {
+            padding: 18px;
+        }
+
+        .settings-topbar {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .settings-topbar h2 {
+            font-size: 1.6rem;
+            text-align: center;
+        }
+
+        .settings-card h3 {
+            font-size: 21px;
+        }
+
+        .settings-card p {
+            font-size: 15px;
+            line-height: 1.62;
+        }
+
+        .settings-btn,
+        .logout-btn,
+        .install-btn {
+            width: 100%;
+            margin-right: 0;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="settings-page-wrapper">
+<div class="settings-page-container">
+
+    <div class="settings-topbar">
+        <a href="/dashboard" class="back-btn">&#8592; Back</a>
+        <h2>Settings</h2>
+        <div style="width: 92px;"></div>
+    </div>
+
+    <div class="settings-grid">
+        <div class="settings-card">
+            <h3>Notifications</h3>
+            <p>
+                Enable notifications here once, so medicine reminders and appointment reminders can use the same browser permission.
+            </p>
+            <button class="settings-btn" onclick="enableNotifications()">Enable Notifications</button>
+            <button class="install-btn" id="installBtn">Install App</button>
+            <div id="notificationStatus" class="status-text default">Notification status: Not checked yet</div>
+        </div>
+
+        <div class="settings-card">
+            <h3>Account</h3>
+            <p>
+                Use logout when you want to safely end your current session on this device.
+            </p>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+</div>
+</div>
+
+<script>
+let deferredPrompt = null;
+
+function updateNotificationStatus() {
+    const statusEl = document.getElementById("notificationStatus");
+
+    if (!("Notification" in window)) {
+        statusEl.innerText = "Notification status: This browser does not support notifications";
+        statusEl.className = "status-text denied";
+        return;
+    }
+
+    if (Notification.permission === "granted") {
+        statusEl.innerText = "Notification status: Enabled";
+        statusEl.className = "status-text";
+    } else if (Notification.permission === "denied") {
+        statusEl.innerText = "Notification status: Denied";
+        statusEl.className = "status-text denied";
+    } else {
+        statusEl.innerText = "Notification status: Not enabled yet";
+        statusEl.className = "status-text default";
+    }
+}
+
+function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
+}
+
+async function getVapidPublicKey() {
+    const response = await fetch("/api/push/vapid-public-key", { method: "GET" });
+    if (!response.ok) {
+        throw new Error("Unable to fetch VAPID key from server.");
+    }
+    const data = await response.json();
+    if (!data.publicKey) {
+        throw new Error("VAPID public key is missing.");
+    }
+    return data.publicKey;
+}
+
+async function saveSubscription(subscription) {
+    const response = await fetch("/api/push/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(subscription)
+    });
+    if (!response.ok) {
+        throw new Error("Unable to save push subscription.");
+    }
+}
+
+async function enableNotifications() {
+    if (!("Notification" in window)) {
+        alert("This browser does not support notifications.");
+        return;
+    }
+
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") {
+        updateNotificationStatus();
+        if (permission === "denied") {
+            alert("Notification permission was denied.");
+        } else {
+            alert("Notification permission was not enabled.");
+        }
+        return;
+    }
+
+    try {
+        const registration = await registerServiceWorker();
+        if (!registration || !("PushManager" in window)) {
+            throw new Error("Push notifications are not supported in this browser.");
+        }
+
+        let subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+            const vapidPublicKey = await getVapidPublicKey();
+            subscription = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+            });
+        }
+
+        await saveSubscription(subscription);
+        updateNotificationStatus();
+        alert("Notifications enabled successfully.");
+    } catch (error) {
+        console.error("Enable notifications failed:", error);
+        alert("Could not complete push setup. Please try again.");
+    }
+}
+
+async function registerServiceWorker() {
+    if ("serviceWorker" in navigator) {
+        try {
+            const registration = await navigator.serviceWorker.register("/service-worker.js?v=6");
+            console.log("Service worker registered successfully.");
+            return registration;
+        } catch (error) {
+            console.error("Service worker registration failed:", error);
+        }
+    }
+    return null;
+}
+
+function setupInstallPrompt() {
+    const installBtn = document.getElementById("installBtn");
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+        event.preventDefault();
+        deferredPrompt = event;
+        installBtn.style.display = "inline-block";
+    });
+
+    installBtn.addEventListener("click", async () => {
+        if (!deferredPrompt) return;
+
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        installBtn.style.display = "none";
+    });
+}
+
+document.addEventListener("DOMContentLoaded", async function () {
+    await registerServiceWorker();
+    setupInstallPrompt();
+    updateNotificationStatus();
+});
+</script>
+
+<script src="{{ url_for('static', filename='theme.js') }}"></script>
+</body>
+</html>
+
+

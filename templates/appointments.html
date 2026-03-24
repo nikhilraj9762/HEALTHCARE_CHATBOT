@@ -17,12 +17,15 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: "Segoe UI Variable", "Segoe UI", sans-serif;
             background: linear-gradient(135deg, #0f172a, #1e293b, #111827);
             background-size: 300% 300%;
             animation: gradientMove 10s ease infinite;
             min-height: 100vh;
             color: white;
+            line-height: 1.6;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
             transition: background 0.35s ease, color 0.35s ease;
         }
 
@@ -35,20 +38,20 @@
         .page-wrapper {
             min-height: 100vh;
             background: rgba(0, 0, 0, 0.30);
-            padding: 30px 20px;
+            padding: 34px 18px 44px;
             transition: background 0.35s ease;
         }
 
         .page-container {
             width: 100%;
-            max-width: 1400px;
+            max-width: 1700px;
             margin: 0 auto;
             background: rgba(255, 255, 255, 0.06);
             border: 1px solid rgba(255,255,255,0.10);
             border-radius: 24px;
             backdrop-filter: blur(10px);
             box-shadow: 0 12px 40px rgba(0,0,0,0.30);
-            padding: 24px;
+            padding: 28px;
             transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
         }
 
@@ -56,14 +59,14 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 20px;
+            gap: 22px;
             flex-wrap: wrap;
-            margin-bottom: 24px;
+            margin-bottom: 26px;
         }
 
         .top-bar h1 {
             margin: 0;
-            font-size: 38px;
+            font-size: clamp(1.85rem, 2.5vw, 2.55rem);
             font-weight: bold;
             color: white;
             flex: 1;
@@ -72,7 +75,7 @@
 
         .back-btn {
             display: inline-block;
-            padding: 12px 18px;
+            padding: 13px 20px;
             border-radius: 12px;
             background: #111827;
             color: white;
@@ -81,6 +84,7 @@
             transition: 0.3s;
             white-space: nowrap;
             cursor: pointer;
+            font-size: 16px;
         }
 
         .back-btn:hover {
@@ -88,7 +92,7 @@
         }
 
         .add-btn {
-            padding: 14px 22px;
+            padding: 14px 24px;
             border: none;
             border-radius: 14px;
             background: #14b8a6;
@@ -104,8 +108,8 @@
 
         #appointmentsList {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 22px;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 24px;
         }
 
         .card {
@@ -113,21 +117,22 @@
             border: 1px solid rgba(255,255,255,0.10);
             border-radius: 20px;
             padding: 24px;
+            min-height: 260px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.20);
             transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
         }
 
         .card p {
-            margin: 10px 0;
-            font-size: 20px;
+            margin: 11px 0;
+            font-size: 17px;
             color: #dbe4ee;
-            line-height: 1.5;
+            line-height: 1.66;
         }
 
         .actions {
             display: flex;
             gap: 14px;
-            margin-top: 22px;
+            margin-top: 24px;
             flex-wrap: wrap;
         }
 
@@ -178,11 +183,11 @@
 
         .modal-content {
             width: 100%;
-            max-width: 520px;
+            max-width: 620px;
             background: #111827;
             border: 1px solid rgba(255,255,255,0.10);
             border-radius: 20px;
-            padding: 28px;
+            padding: 30px;
             box-shadow: 0 12px 40px rgba(0,0,0,0.35);
             transition: background 0.35s ease, border 0.35s ease, box-shadow 0.35s ease;
         }
@@ -190,20 +195,20 @@
         .modal-content h2 {
             margin-top: 0;
             margin-bottom: 18px;
-            font-size: 28px;
+            font-size: 30px;
             color: white;
             text-align: center;
         }
 
         .modal-content input {
             width: 100%;
-            padding: 14px 16px;
+            padding: 15px 16px;
             margin-bottom: 14px;
             border-radius: 12px;
             border: 1px solid rgba(255,255,255,0.10);
             background: rgba(255,255,255,0.08);
             color: white;
-            font-size: 16px;
+            font-size: 17px;
             outline: none;
         }
 
@@ -226,7 +231,7 @@
             border: none;
             border-radius: 12px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 17px;
             transition: 0.3s;
         }
 
@@ -325,6 +330,12 @@
             background: #cbd5e1;
         }
 
+        @media (max-width: 1400px) {
+            #appointmentsList {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
         @media (max-width: 768px) {
             .top-bar {
                 flex-direction: column;
@@ -333,11 +344,22 @@
 
             .top-bar h1 {
                 text-align: center;
-                font-size: 28px;
+                font-size: 1.6rem;
+            }
+
+            #appointmentsList {
+                grid-template-columns: 1fr;
+                gap: 14px;
+            }
+
+            .card {
+                min-height: 200px;
+                padding: 18px;
             }
 
             .card p {
-                font-size: 18px;
+                font-size: 15px;
+                line-height: 1.62;
             }
         }
     </style>
@@ -348,7 +370,7 @@
         <div class="page-container">
 
             <div class="top-bar">
-                <a href="/dashboard" class="back-btn">← Back</a>
+                <a href="/dashboard" class="back-btn">&#8592; Back</a>
                 <h1>Appointments</h1>
                 <button class="add-btn" onclick="openModal()">+ Add Appointment</button>
             </div>
@@ -491,3 +513,4 @@
     <script src="{{ url_for('static', filename='theme.js') }}"></script>
 </body>
 </html>
+
